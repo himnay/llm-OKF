@@ -1,6 +1,5 @@
 package com.llm.okf.navigator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llm.okf.config.OkfProperties;
 import com.llm.okf.model.OkfFile;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -26,9 +27,9 @@ public class OkfNavigator {
     private final ChatClient chatClient;
     private final OkfProperties properties;
     private final ResourceLoader resourceLoader;
-    private final ObjectMapper objectMapper;
 
     private static final String FRONTMATTER_DELIMITER = "---";
+    private static final Pattern FILE_PATH_PATTERN = Pattern.compile("\"([^\"]+\\.md)\"");
 
     public String loadIndex() {
         return readResource(properties.knowledgeBasePath() + "/index.md");
@@ -155,21 +156,16 @@ public class OkfNavigator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private List<String> parseFilePaths(String json) {
-        try {
-            String trimmed = json.trim();
-            int start = trimmed.indexOf('[');
-            int end = trimmed.lastIndexOf(']');
-            if (start == -1 || end == -1 || start > end) {
-                log.warn("No JSON array found in navigation response: {}", json);
-                return List.of();
-            }
-            return objectMapper.readValue(trimmed.substring(start, end + 1), List.class);
-        } catch (Exception e) {
-            log.warn("Failed to parse file paths from LLM response: {}", json);
-            return List.of();
+        Matcher matcher = FILE_PATH_PATTERN.matcher(json);
+        List<String> paths = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            paths.add(matcher.group(1));
         }
+        if (paths.isEmpty()) {
+            log.warn("No file paths found in navigation response: {}", json);
+        }
+        return paths;
     }
 
     @SuppressWarnings("unchecked")

@@ -12,6 +12,7 @@ spring:
         options:
           model: ${OLLAMA_MODEL:llama3.1:8b}
           temperature: 0.3
+          num-ctx: ${OLLAMA_CTX:32768}
 
 management:
   endpoints:
