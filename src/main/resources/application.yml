@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8090}
+  shutdown: graceful
+
+spring:
+  application:
+    name: llm-OKF
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.1:8b}
+          temperature: 0.3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  okf:
+    knowledge-base-path: ${OKF_KB_PATH:classpath:okf}
+    max-files-per-query: ${OKF_MAX_FILES:5}
+    navigation-model: ${OKF_NAV_MODEL:llama3.1:8b}
