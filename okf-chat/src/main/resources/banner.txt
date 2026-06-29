@@ -1,0 +1,17 @@
+${AnsiColor.BRIGHT_CYAN}
+   ___  _  ______
+  / _ \| |/ /  __|
+ | | | | ' /| |_
+ | |_| | . \|  _|
+  \___/|_|\_\_|
+${AnsiColor.BRIGHT_WHITE}
+  Open Knowledge Format — RAG without vectors
+  Navigate knowledge like an agent. No embeddings. No chunking. No vector DB.
+
+${AnsiColor.BRIGHT_GREEN}
+:: Application    : ${spring.application.name}
+:: Spring Boot    : ${spring-boot.version}
+:: Port           : ${server.port}
+:: Ollama Model   : ${spring.ai.ollama.chat.model}
+:: Java           : ${java.version}
+${AnsiColor.DEFAULT}

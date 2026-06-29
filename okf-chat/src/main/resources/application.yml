@@ -1,0 +1,54 @@
+server:
+  port: ${SERVER_PORT:8090}
+  shutdown: graceful
+
+spring:
+  application:
+    name: llm-OKF
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/okf}
+    username: ${DB_USER:okf}
+    password: ${DB_PASSWORD:okf}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 30000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        model: ${OLLAMA_MODEL:ornith:35b}
+        temperature: 0.3
+        num-ctx: ${OLLAMA_CTX:32768}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  okf:
+    knowledge-base-path: ${OKF_KB_PATH:/home/himansu/projects/okf}
+    max-files-per-query: ${OKF_MAX_FILES:5}
+    navigation-model: ${OKF_NAV_MODEL:llama3.1:8b}
+    extraction-model: ${OKF_EXTRACTION_MODEL:qwen3:32b}
+    sync:
+      github-url: ${GITHUB_REPO_URL}
+      github-token: ${GITHUB_TOKEN:}
+      interval-ms: ${OKF_SYNC_INTERVAL_MS:3600000}
+      enabled: ${OKF_SYNC_ENABLED:true}
+      sync-on-startup: ${OKF_SYNC_ON_STARTUP:true}
+      use-llm-summarization: ${OKF_LLM_SUMMARIZE:true}

@@ -1,0 +1,26 @@
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: llama3.1:8b
+  datasource:
+    url: jdbc:postgresql://localhost:5432/okf
+    username: okf
+    password: okf
+  flyway:
+    enabled: false
+
+app:
+  okf:
+    knowledge-base-path: /tmp/okf-test
+    max-files-per-query: 5
+    navigation-model: llama3.1:8b
+    extraction-model: llama3.1:8b
+    sync:
+      github-url: https://github.com/test/test
+      github-token: ""
+      interval-ms: 3600000
+      enabled: false
+      sync-on-startup: false
+      use-llm-summarization: false

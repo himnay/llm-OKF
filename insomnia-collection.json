@@ -7,8 +7,8 @@
     {
       "_id": "wrk_llm_okf",
       "_type": "workspace",
-      "name": "LLM OKF — Open Knowledge Format",
-      "description": "OKF as a RAG replacement: structured markdown knowledge base, deterministic navigation, no vector DB",
+      "name": "LLM OKF — GitHub-Synced Knowledge Base",
+      "description": "OKF as a RAG replacement: structured markdown synced from GitHub, deterministic navigation, no vector DB",
       "scope": "collection"
     },
     {
@@ -21,72 +21,58 @@
       }
     },
     {
-      "_id": "fld_okf",
+      "_id": "fld_chat",
       "_type": "request_group",
       "parentId": "wrk_llm_okf",
       "name": "OKF Chat",
-      "description": "Query the OKF knowledge base"
+      "description": "Query the OKF knowledge base synced from GitHub"
     },
     {
       "_id": "fld_knowledge",
       "_type": "request_group",
       "parentId": "wrk_llm_okf",
       "name": "Knowledge Base",
-      "description": "Inspect and manage the OKF knowledge base"
+      "description": "Inspect the synced OKF knowledge base"
     },
     {
-      "_id": "fld_ingest",
+      "_id": "fld_sync",
       "_type": "request_group",
       "parentId": "wrk_llm_okf",
-      "name": "Ingestion",
-      "description": "Ingest documents into OKF"
+      "name": "GitHub Sync",
+      "description": "Trigger and monitor GitHub repository sync"
     },
     {
       "_id": "req_chat",
       "_type": "request",
-      "parentId": "fld_okf",
-      "name": "Chat — OKF Query",
-      "description": "Ask a question. OKF navigator reads index.md, selects relevant files, LLM answers with full context. No vector DB.",
+      "parentId": "fld_chat",
+      "name": "Chat — Ask a Question",
+      "description": "Ask anything. Navigator reads index, selects relevant files from GitHub-synced KB, LLM answers with full context.",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/chat",
       "headers": [{"name": "Content-Type", "value": "application/json"}],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What is OKF and how does it differ from RAG?\"\n}"
+        "text": "{\n  \"question\": \"What topics are covered in this knowledge base?\"\n}"
       }
     },
     {
-      "_id": "req_chat_local_llm",
+      "_id": "req_chat_2",
       "_type": "request",
-      "parentId": "fld_okf",
-      "name": "Chat — Local LLM Setup Query",
-      "description": "Ask about local LLM setup. Tests navigation to concepts/local-llm-setup.md",
+      "parentId": "fld_chat",
+      "name": "Chat — Sample Query",
+      "description": "Example query targeting content from the synced GitHub repo",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/chat",
       "headers": [{"name": "Content-Type", "value": "application/json"}],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"How do I fix ROCm GPU errors on AMD iGPU?\"\n}"
-      }
-    },
-    {
-      "_id": "req_chat_spring_ai",
-      "_type": "request",
-      "parentId": "fld_okf",
-      "name": "Chat — Spring AI Query",
-      "description": "Ask about Spring AI. Tests navigation to concepts/spring-ai-overview.md",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/chat",
-      "headers": [{"name": "Content-Type", "value": "application/json"}],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What is ChatClient in Spring AI and how do I use it?\"\n}"
+        "text": "{\n  \"question\": \"What Java concepts or patterns are covered in the learning repo?\"\n}"
       }
     },
     {
       "_id": "req_stream",
       "_type": "request",
-      "parentId": "fld_okf",
+      "parentId": "fld_chat",
       "name": "Chat — Stream (SSE)",
       "description": "Same as chat but streams tokens via Server-Sent Events",
       "method": "POST",
@@ -97,7 +83,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"Explain the OKF navigation pattern step by step\"\n}"
+        "text": "{\n  \"question\": \"Summarize the key learning topics in this repository\"\n}"
       }
     },
     {
@@ -105,7 +91,7 @@
       "_type": "request",
       "parentId": "fld_knowledge",
       "name": "Get OKF Index",
-      "description": "Returns the master index.md — the navigation file agents read first",
+      "description": "Returns the auto-generated index.md — the navigation file listing all synced knowledge files",
       "method": "GET",
       "url": "{{ base_url }}/api/v1/okf/index",
       "headers": [],
@@ -116,31 +102,33 @@
       "_type": "request",
       "parentId": "fld_knowledge",
       "name": "List All OKF Files",
-      "description": "Returns all OKF markdown files with parsed frontmatter metadata",
+      "description": "Returns all synced OKF markdown files with parsed frontmatter metadata",
       "method": "GET",
       "url": "{{ base_url }}/api/v1/okf/files",
       "headers": [],
       "body": {}
     },
     {
-      "_id": "req_ingest_pdf",
+      "_id": "req_sync_trigger",
       "_type": "request",
-      "parentId": "fld_ingest",
-      "name": "Ingest PDF",
-      "description": "Upload a PDF file. It is read, converted to OKF markdown with YAML frontmatter, and saved as a reference file.",
+      "parentId": "fld_sync",
+      "name": "Trigger Manual Sync",
+      "description": "Fetches latest files from github.com/himnay/learning, creates OKF markdown for each, regenerates index. Returns sync result.",
       "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/ingest/pdf",
+      "url": "{{ base_url }}/api/v1/okf/sync",
       "headers": [],
-      "body": {
-        "mimeType": "multipart/form-data",
-        "params": [
-          {
-            "name": "file",
-            "type": "file",
-            "fileName": ""
-          }
-        ]
-      }
+      "body": {}
+    },
+    {
+      "_id": "req_sync_status",
+      "_type": "request",
+      "parentId": "fld_sync",
+      "name": "Sync Status",
+      "description": "Returns the last sync result: status, timestamp, file counts, and any errors",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/okf/sync/status",
+      "headers": [],
+      "body": {}
     },
     {
       "_id": "req_health",

@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### OKF knowledge base — runtime-generated, synced from GitHub ###
+src/main/resources/okf/

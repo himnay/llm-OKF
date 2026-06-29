@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: okf-postgres
+    environment:
+      POSTGRES_DB: okf
+      POSTGRES_USER: okf
+      POSTGRES_PASSWORD: okf
+    ports:
+      - "5432:5432"
+    volumes:
+      - okf_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U okf -d okf"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+volumes:
+  okf_pgdata:
+    driver: local
+  okf_ollama:
+    driver: local
