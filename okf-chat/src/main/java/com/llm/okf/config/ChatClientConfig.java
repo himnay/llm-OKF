@@ -14,20 +14,28 @@ import org.springframework.context.annotation.Primary;
 @EnableConfigurationProperties(OkfProperties.class)
 public class ChatClientConfig {
 
-    /**
-     * Primary chat client — wired to {@code spring.ai.ollama.chat.model} (fast model for navigation and answering).
-     * Used by {@link com.llm.okf.navigator.OkfNavigator} and {@link com.llm.okf.service.OkfChatService}.
-     */
+    /** Primary chat client — quality model for answering user questions. */
     @Primary
     @Bean
     ChatClient chatClient(ChatModel chatModel) {
         return ChatClient.builder(chatModel).build();
     }
 
-    /**
-     * Extraction chat client — wired to {@code app.okf.extraction-model} (quality model for OKF doc generation during sync).
-     * Used by {@link com.llm.okf.service.GitHubSyncService} to convert raw source files into OKF knowledge documents.
-     */
+    /** Navigation client — fast small model, only selects relevant files from index. */
+    @Bean
+    ChatClient navigationChatClient(OllamaApi ollamaApi, OkfProperties properties) {
+        OllamaChatModel model = OllamaChatModel.builder()
+                .ollamaApi(ollamaApi)
+                .options(OllamaChatOptions.builder()
+                        .model(properties.navigationModel())
+                        .temperature(0.0)
+                        .numCtx(8192)
+                        .build())
+                .build();
+        return ChatClient.builder(model).build();
+    }
+
+    /** Extraction client — quality model for converting raw source files into OKF docs during sync. */
     @Bean
     ChatClient extractionChatClient(OllamaApi ollamaApi, OkfProperties properties) {
         OllamaChatModel model = OllamaChatModel.builder()

@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,6 +28,12 @@ public class GlobalExceptionHandler {
                         FieldError::getDefaultMessage,
                         (a, b) -> b));
         return ApiError.of(400, "Validation Failed", "Request validation failed", fieldErrors);
+    }
+
+    /** Client disconnected before LLM finished — not an application error. */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(AsyncRequestNotUsableException ex) {
+        log.warn("Client disconnected before response completed: {}", ex.getMessage());
     }
 
     /** Catches all unhandled exceptions and returns a 500 with the exception message. Logs at ERROR level. */

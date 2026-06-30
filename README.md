@@ -445,7 +445,7 @@ All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/proj
 /home/himansu/projects/okf/
 ├── index.md                              ← Auto-generated navigation index
 ├── README.md                             ← From GitHub root (with OKF frontmatter added)
-├── docs/
+├── docs/0
 │   ├── architecture.md                   ← Markdown files: original body + generated frontmatter
 │   └── getting-started.md
 └── src/

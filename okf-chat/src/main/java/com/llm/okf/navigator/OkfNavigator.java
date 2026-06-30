@@ -5,6 +5,7 @@ import com.llm.okf.model.OkfFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,11 +21,15 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OkfNavigator {
 
-    private final ChatClient chatClient;
+    private final ChatClient navigationChatClient;
     private final OkfProperties properties;
+
+    public OkfNavigator(@Qualifier("navigationChatClient") ChatClient navigationChatClient, OkfProperties properties) {
+        this.navigationChatClient = navigationChatClient;
+        this.properties = properties;
+    }
 
     private static final Pattern FILE_PATH_PATTERN = Pattern.compile("\"([^\"]+\\.md)\"");
 
@@ -60,7 +65,7 @@ public class OkfNavigator {
                 Respond with ONLY the JSON array, no other text.
                 """.formatted(index, query, properties.maxFilesPerQuery());
 
-        String response = chatClient.prompt()
+        String response = navigationChatClient.prompt()
                 .user(navigationPrompt)
                 .call()
                 .content();
