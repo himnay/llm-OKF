@@ -1,5 +1,6 @@
 package com.llm.okf.repository;
 
+import com.llm.okf.model.OkfSyncState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,70 +13,53 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OkfSyncStateRepository {
 
+    private final OkfSyncStateJdbcRepository jdbcRepo;
     private final JdbcTemplate jdbc;
 
+    public record SyncState(String sha, String llmModel) {}
+
     /**
-     * Returns a map of {@code filePath → sha} for all previously synced files from the given repo.
-     * Used to detect which files have changed since the last sync.
-     *
-     * @param repoUrl the GitHub repo URL used as the partition key
+     * Returns a map of {@code filePath → SyncState(sha, llmModel)} for all previously synced files.
+     * Used to detect files changed by GitHub commit OR by extraction model change in application.yml.
      */
-    public Map<String, String> loadShas(String repoUrl) {
-        List<String[]> rows = jdbc.query(
-                "SELECT file_path, sha FROM okf_sync_state WHERE repo_url = ?",
-                (rs, i) -> new String[]{rs.getString("file_path"), rs.getString("sha")},
+    public Map<String, SyncState> loadState(String repoUrl) {
+        List<Object[]> rows = jdbc.query(
+                "SELECT file_path, sha, llm_model FROM okf_sync_state WHERE repo_url = ?",
+                (rs, i) -> new Object[]{rs.getString("file_path"), rs.getString("sha"), rs.getString("llm_model")},
                 repoUrl
         );
-        Map<String, String> result = new LinkedHashMap<>();
-        rows.forEach(r -> result.put(r[0], r[1]));
+        Map<String, SyncState> result = new LinkedHashMap<>();
+        rows.forEach(r -> result.put((String) r[0], new SyncState((String) r[1], (String) r[2])));
         return result;
     }
 
     /**
-     * Upserts a single file SHA immediately after it is processed — ensures crash recovery:
-     * a restart will skip this file on the next sync because its SHA is already persisted.
+     * Upserts a file record via Spring Data JDBC — triggers {@code @CreatedBy}/{@code @LastModifiedBy}
+     * and {@code @CreatedDate}/{@code @LastModifiedDate} population automatically.
+     * On first insert: all four audit fields are set.
+     * On update: only {@code lastModifiedBy} and {@code lastModifiedAt} are refreshed.
      */
-    public void saveOne(String filePath, String sha, String repoUrl) {
-        jdbc.update("""
-                INSERT INTO okf_sync_state (file_path, repo_url, sha, synced_at)
-                VALUES (?, ?, ?, NOW())
-                ON CONFLICT (repo_url, file_path) DO UPDATE SET sha = EXCLUDED.sha, synced_at = NOW()
-                """, filePath, repoUrl, sha);
+    public void saveOne(String filePath, String sha, String repoUrl, String llmModel) {
+        OkfSyncState entity = jdbcRepo.findByRepoUrlAndFilePath(repoUrl, filePath)
+                .orElseGet(() -> {
+                    OkfSyncState s = new OkfSyncState();
+                    s.setFilePath(filePath);
+                    s.setRepoUrl(repoUrl);
+                    return s;
+                });
+        entity.setSha(sha);
+        entity.setLlmModel(llmModel);
+        jdbcRepo.save(entity);
     }
 
     /**
      * Removes DB records for file paths that no longer exist in the GitHub repo.
-     *
-     * @param filePaths paths to remove
-     * @param repoUrl   the GitHub repo URL partition key
      */
     public void deleteAll(List<String> filePaths, String repoUrl) {
         if (filePaths.isEmpty()) return;
         jdbc.batchUpdate(
                 "DELETE FROM okf_sync_state WHERE repo_url = ? AND file_path = ?",
                 filePaths.stream().map(p -> new Object[]{repoUrl, p}).toList()
-        );
-    }
-
-    /**
-     * Upserts file SHAs into {@code okf_sync_state}. Uses {@code ON CONFLICT DO UPDATE} so each call
-     * is idempotent — safe to re-run after a partial sync failure.
-     *
-     * @param shas    map of {@code filePath → sha} for all files processed in this sync run
-     * @param repoUrl the GitHub repo URL used as the partition key
-     */
-    public void saveAll(Map<String, String> shas, String repoUrl) {
-        if (shas.isEmpty()) return;
-        jdbc.batchUpdate(
-                """
-                INSERT INTO okf_sync_state (file_path, repo_url, sha, synced_at)
-                VALUES (?, ?, ?, NOW())
-                ON CONFLICT (repo_url, file_path)
-                DO UPDATE SET sha = EXCLUDED.sha, synced_at = NOW()
-                """,
-                shas.entrySet().stream()
-                        .map(e -> new Object[]{e.getKey(), repoUrl, e.getValue()})
-                        .toList()
         );
     }
 }

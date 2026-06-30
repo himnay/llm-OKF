@@ -473,3 +473,4 @@ Key points about how files are stored:
 - Spring AI docs: https://docs.spring.io/spring-ai/reference/
 - Ollama: https://ollama.com/
 - ShedLock: https://github.com/lukas-krecan/ShedLock
+- Spec: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md

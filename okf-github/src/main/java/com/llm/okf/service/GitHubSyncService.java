@@ -99,7 +99,8 @@ public class GitHubSyncService {
 
             log.info("Processing {} files (skipping binaries) from {}/{}", blobs.size(), owner, repo);
 
-            Map<String, String> existingShas = syncStateRepository.loadShas(githubUrl);
+            Map<String, OkfSyncStateRepository.SyncState> existingState = syncStateRepository.loadState(githubUrl);
+            String currentModel = properties.sync().useLlmSummarization() ? properties.extractionModel() : "none";
             Map<String, String> currentShas = new LinkedHashMap<>();
             int total = blobs.size();
             int processed = 0;
@@ -110,10 +111,16 @@ public class GitHubSyncService {
 
                 Path okfPath = resolveOkfPath(syncDir, item.path());
                 boolean exists = Files.exists(okfPath);
-                String prevSha = existingShas.get(item.path());
+                OkfSyncStateRepository.SyncState prevState = existingState.get(item.path());
 
-                if (exists && item.sha().equals(prevSha)) {
+                boolean shaUnchanged = prevState != null && item.sha().equals(prevState.sha());
+                boolean modelUnchanged = prevState != null && currentModel.equals(prevState.llmModel());
+                if (exists && shaUnchanged && modelUnchanged) {
                     continue;
+                }
+                if (exists && shaUnchanged && !modelUnchanged) {
+                    log.info("[{}/{}] Model changed ({}→{}) — regenerating: {}", processed, total,
+                            prevState.llmModel(), currentModel, item.path());
                 }
 
                 log.info("[{}/{}] Syncing: {}", processed, total, item.path());
@@ -135,8 +142,8 @@ public class GitHubSyncService {
                     String okfContent = generateOkfDocument(item.path(), raw, owner, repo);
                     Files.writeString(okfPath, okfContent, StandardCharsets.UTF_8);
 
-                    // Persist SHA immediately — crash recovery: next sync skips already-processed files
-                    syncStateRepository.saveOne(item.path(), item.sha(), githubUrl);
+                    // Persist SHA + model immediately — crash recovery and model-change detection
+                    syncStateRepository.saveOne(item.path(), item.sha(), githubUrl, currentModel);
                     if (!exists) newFiles++;
                     else updatedFiles++;
 
@@ -147,14 +154,16 @@ public class GitHubSyncService {
             }
 
             skipped += (int) blobs.stream().filter(i -> {
-                String prevSha = existingShas.get(i.path());
+                OkfSyncStateRepository.SyncState prev = existingState.get(i.path());
                 Path okfPath = resolveOkfPath(syncDir, i.path());
-                return Files.exists(okfPath) && i.sha().equals(prevSha);
+                return Files.exists(okfPath)
+                        && prev != null && i.sha().equals(prev.sha())
+                        && currentModel.equals(prev.llmModel());
             }).count();
 
             // Delete local OKF files for paths removed from GitHub
             int deleted = 0;
-            for (String removedPath : existingShas.keySet()) {
+            for (String removedPath : existingState.keySet()) {
                 if (!currentShas.containsKey(removedPath)) {
                     Path okfPath = resolveOkfPath(syncDir, removedPath);
                     if (Files.deleteIfExists(okfPath)) {
@@ -164,7 +173,7 @@ public class GitHubSyncService {
                 }
             }
             if (deleted > 0) syncStateRepository.deleteAll(
-                    existingShas.keySet().stream().filter(p -> !currentShas.containsKey(p)).toList(), githubUrl);
+                    existingState.keySet().stream().filter(p -> !currentShas.containsKey(p)).toList(), githubUrl);
 
             indexGenerator.generateIndex(syncDir, owner, repo);
 
@@ -190,10 +199,10 @@ public class GitHubSyncService {
         return lastStatus;
     }
 
-    // Generates a proper OKF knowledge document. For new/changed files:
+    // Generates a spec-compliant OKF knowledge document (SPEC.md §4).
     // - If LLM summarization is on: LLM extracts the concept/knowledge from the file content
     // - If off (or LLM fails): wraps content in minimal OKF frontmatter
-    // Preserves existing OKF documents that already have description + title.
+    // Preserves existing OKF documents that already have a valid `type:` field (required per spec).
     private String generateOkfDocument(String gitPath, String rawContent, String owner, String repo) {
         String sourceUrl = "https://github.com/" + owner + "/" + repo + "/blob/HEAD/" + gitPath;
 
@@ -224,6 +233,7 @@ public class GitHubSyncService {
     private String generateMdOkf(String gitPath, String rawContent, String sourceUrl, String repo) {
         String preview = rawContent.length() > 2000 ? rawContent.substring(0, 2000) + "\n..." : rawContent;
 
+        String timestamp = java.time.Instant.now().toString();
         String prompt = """
                 Analyze this markdown document and generate ONLY the OKF YAML frontmatter block for it.
                 The frontmatter will be prepended to the original document body.
@@ -234,17 +244,17 @@ public class GitHubSyncService {
                 %s
 
                 Respond with ONLY the YAML frontmatter block (including the --- delimiters). Nothing else.
-                Use EXACTLY this format:
+                Use EXACTLY this format (OKF spec v0.1 §4.1):
 
                 ---
                 type: <concept|reference|playbook>
                 title: <meaningful human-readable title, NOT just the filename>
                 description: <ONE sentence max 120 chars — what this document covers, used for index navigation>
-                source: %s
+                resource: %s
                 tags: [github, %s]
-                related: []
+                timestamp: %s
                 ---
-                """.formatted(gitPath, preview, sourceUrl, repo);
+                """.formatted(gitPath, preview, sourceUrl, repo, timestamp);
 
         try {
             String response = extractionChatClient.prompt().user(prompt).call().content().trim();
@@ -267,6 +277,7 @@ public class GitHubSyncService {
                 ? rawContent.substring(0, 3000) + "\n...[content truncated]"
                 : rawContent;
 
+        String timestamp = java.time.Instant.now().toString();
         String prompt = """
                 You are an OKF (Open Knowledge Format) knowledge curator.
                 Extract and document the KEY KNOWLEDGE from this source file as a structured OKF knowledge document.
@@ -281,15 +292,15 @@ public class GitHubSyncService {
                 %s
                 ```
 
-                Respond with ONLY a valid OKF markdown document. Use EXACTLY this structure (preserve the --- delimiters and field names):
+                Respond with ONLY a valid OKF markdown document. Use EXACTLY this structure (OKF spec v0.1 §4.1):
 
                 ---
                 type: <concept|reference|playbook>
                 title: <short human-readable title, e.g. "Singleton Design Pattern in Java">
                 description: <ONE sentence max 120 chars — what key knowledge this captures for index navigation>
-                source: %s
+                resource: %s
                 tags: [github, %s]
-                related: []
+                timestamp: %s
                 ---
 
                 # <title>
@@ -300,7 +311,7 @@ public class GitHubSyncService {
                 - <key insight 1>
                 - <key insight 2>
                 - <key insight 3>
-                """.formatted(gitPath, sourceUrl, lang, truncated, sourceUrl, repo);
+                """.formatted(gitPath, sourceUrl, lang, truncated, sourceUrl, repo, timestamp);
 
         try {
             String response = extractionChatClient.prompt().user(prompt).call().content();
@@ -322,24 +333,28 @@ public class GitHubSyncService {
         return response.substring(start, end + 3).trim();
     }
 
+    // Per OKF spec §9: only `type` is required. title/description are recommended but not enforced here.
     private boolean hasCompleteFrontmatter(String content) {
         if (!content.startsWith("---")) return false;
         int end = content.indexOf("---", 3);
         if (end < 0) return false;
         String fm = content.substring(4, end);
-        return fm.contains("title:") && fm.contains("description:");
+        return fm.contains("type:");
     }
 
     private String buildSimpleOkf(String gitPath, String content, String sourceUrl, String repo) {
         String filename = gitPath.substring(gitPath.lastIndexOf('/') + 1);
         String title = filename.replaceAll("\\.[^.]+$", "");
         String lang = detectLang(gitPath);
+        String timestamp = java.time.Instant.now().toString();
 
         if (gitPath.endsWith(".md")) {
             return "---\ntype: concept\ntitle: " + title
                     + "\ndescription: " + title + " — knowledge file from " + repo
-                    + "\nsource: " + sourceUrl
-                    + "\ntags: [github, " + repo + "]\nrelated: []\n---\n\n" + content;
+                    + "\nresource: " + sourceUrl
+                    + "\ntags: [github, " + repo + "]"
+                    + "\ntimestamp: " + timestamp
+                    + "\n---\n\n" + content;
         }
 
         return """
@@ -347,9 +362,9 @@ public class GitHubSyncService {
                 type: reference
                 title: %s
                 description: %s — source code reference from %s
-                source: %s
+                resource: %s
                 tags: [github, code, %s, %s]
-                related: []
+                timestamp: %s
                 ---
 
                 # %s
@@ -359,7 +374,7 @@ public class GitHubSyncService {
                 ```%s
                 %s
                 ```
-                """.formatted(title, title, repo, sourceUrl, repo, lang, title, gitPath, lang, content);
+                """.formatted(title, title, repo, sourceUrl, repo, lang, timestamp, title, gitPath, lang, content);
     }
 
     private Path resolveOkfPath(Path syncDir, String gitPath) {

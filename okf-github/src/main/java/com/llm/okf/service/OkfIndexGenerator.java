@@ -44,13 +44,12 @@ public class OkfIndexGenerator {
                      .add(new IndexEntry(title, rel, description));
         }
 
+        // OKF spec §11: root index.md may have frontmatter only for okf_version
+        // OKF spec §6: index body uses `* [Title](url) - description` format
         StringBuilder sb = new StringBuilder();
         sb.append("""
                 ---
-                type: index
-                title: %s/%s Knowledge Base
-                source: https://github.com/%s/%s
-                description: Auto-generated OKF index synced from GitHub. Agents read this first to navigate to relevant knowledge files.
+                okf_version: "0.1"
                 ---
 
                 # %s/%s Knowledge Base
@@ -58,15 +57,15 @@ public class OkfIndexGenerator {
                 > Auto-synced from [github.com/%s/%s](https://github.com/%s/%s)
                 > Each entry links to an OKF knowledge document — read the description to navigate intelligently.
 
-                """.formatted(owner, repo, owner, repo, owner, repo, owner, repo, owner, repo));
+                """.formatted(owner, repo, owner, repo, owner, repo));
 
         for (Map.Entry<String, List<IndexEntry>> entry : bySection.entrySet()) {
             String section = entry.getKey().equals("root") ? "Root" : entry.getKey();
-            sb.append("## ").append(section).append("\n");
+            sb.append("## ").append(section).append("\n\n");
             for (IndexEntry e : entry.getValue()) {
-                sb.append("- [").append(e.title()).append("](").append(e.path()).append(")");
+                sb.append("* [").append(e.title()).append("](").append(e.path()).append(")");
                 if (!e.description().isEmpty()) {
-                    sb.append(" — ").append(e.description());
+                    sb.append(" - ").append(e.description());
                 }
                 sb.append("\n");
             }
