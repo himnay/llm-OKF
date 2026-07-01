@@ -1,5 +1,7 @@
 package com.llm.okf.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -14,18 +16,24 @@ import org.springframework.context.annotation.Primary;
 @EnableConfigurationProperties(OkfProperties.class)
 public class ChatClientConfig {
 
-    /** Primary chat client — quality model for answering user questions. */
-    @Primary
     @Bean
+    ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
+
+    /** Primary chat client — quality model for answering user questions. */
+    @Bean
+    @Primary
     ChatClient chatClient(ChatModel chatModel) {
         return ChatClient.builder(chatModel).build();
     }
 
     /** Navigation client — fast small model, only selects relevant files from index. */
     @Bean
-    ChatClient navigationChatClient(OllamaApi ollamaApi, OkfProperties properties) {
+    ChatClient navigationChatClient(OllamaApi ollamaApi, OkfProperties properties, ObservationRegistry observationRegistry) {
         OllamaChatModel model = OllamaChatModel.builder()
                 .ollamaApi(ollamaApi)
+                .observationRegistry(observationRegistry)
                 .options(OllamaChatOptions.builder()
                         .model(properties.navigationModel())
                         .temperature(0.0)
@@ -37,9 +45,10 @@ public class ChatClientConfig {
 
     /** Extraction client — quality model for converting raw source files into OKF docs during sync. */
     @Bean
-    ChatClient extractionChatClient(OllamaApi ollamaApi, OkfProperties properties) {
+    ChatClient extractionChatClient(OllamaApi ollamaApi, OkfProperties properties, ObservationRegistry observationRegistry) {
         OllamaChatModel model = OllamaChatModel.builder()
                 .ollamaApi(ollamaApi)
+                .observationRegistry(observationRegistry)
                 .options(OllamaChatOptions.builder()
                         .model(properties.extractionModel())
                         .temperature(0.2)

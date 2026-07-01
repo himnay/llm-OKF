@@ -1,4 +1,4 @@
-package com.llm.okf.web;
+package com.llm.okf.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

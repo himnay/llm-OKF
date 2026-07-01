@@ -1,13 +1,17 @@
 package com.llm.okf.service;
 
 import com.llm.okf.config.OkfProperties;
+import com.llm.okf.event.IndexSyncedEvent;
 import com.llm.okf.model.GitHubTreeItem;
 import com.llm.okf.model.GitHubTreeResponse;
 import com.llm.okf.model.SyncStatus;
 import com.llm.okf.repository.OkfSyncStateRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -23,7 +27,6 @@ import java.util.Set;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GitHubSyncService {
 
     private final ChatClient extractionChatClient;
@@ -31,6 +34,28 @@ public class GitHubSyncService {
     private final OkfIndexGenerator indexGenerator;
     private final OkfSyncStateRepository syncStateRepository;
     private final RestClient restClient;
+    private final PromptTemplate extractionMdPrompt;
+    private final PromptTemplate extractionCodePrompt;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public GitHubSyncService(
+            ChatClient extractionChatClient,
+            OkfProperties properties,
+            OkfIndexGenerator indexGenerator,
+            OkfSyncStateRepository syncStateRepository,
+            RestClient restClient,
+            @Value("classpath:prompts/extraction-md.st") Resource extractionMdResource,
+            @Value("classpath:prompts/extraction-code.st") Resource extractionCodeResource,
+            ApplicationEventPublisher eventPublisher) {
+        this.extractionChatClient = extractionChatClient;
+        this.properties = properties;
+        this.indexGenerator = indexGenerator;
+        this.syncStateRepository = syncStateRepository;
+        this.restClient = restClient;
+        this.extractionMdPrompt = new PromptTemplate(extractionMdResource);
+        this.extractionCodePrompt = new PromptTemplate(extractionCodeResource);
+        this.eventPublisher = eventPublisher;
+    }
 
     private static final Set<String> BINARY_EXTENSIONS = Set.of(
             "png", "jpg", "jpeg", "gif", "svg", "ico", "bmp", "webp",
@@ -116,6 +141,7 @@ public class GitHubSyncService {
                 boolean shaUnchanged = prevState != null && item.sha().equals(prevState.sha());
                 boolean modelUnchanged = prevState != null && currentModel.equals(prevState.llmModel());
                 if (exists && shaUnchanged && modelUnchanged) {
+                    skipped++;
                     continue;
                 }
                 if (exists && shaUnchanged && !modelUnchanged) {
@@ -153,14 +179,6 @@ public class GitHubSyncService {
                 }
             }
 
-            skipped += (int) blobs.stream().filter(i -> {
-                OkfSyncStateRepository.SyncState prev = existingState.get(i.path());
-                Path okfPath = resolveOkfPath(syncDir, i.path());
-                return Files.exists(okfPath)
-                        && prev != null && i.sha().equals(prev.sha())
-                        && currentModel.equals(prev.llmModel());
-            }).count();
-
             // Delete local OKF files for paths removed from GitHub
             int deleted = 0;
             for (String removedPath : existingState.keySet()) {
@@ -176,6 +194,7 @@ public class GitHubSyncService {
                     existingState.keySet().stream().filter(p -> !currentShas.containsKey(p)).toList(), githubUrl);
 
             indexGenerator.generateIndex(syncDir, owner, repo);
+            eventPublisher.publishEvent(new IndexSyncedEvent(this));
 
             String statusStr = errors.isEmpty() ? "SUCCESS" : "PARTIAL";
             SyncStatus status = new SyncStatus(statusStr, Instant.now(),
@@ -234,27 +253,13 @@ public class GitHubSyncService {
         String preview = rawContent.length() > 2000 ? rawContent.substring(0, 2000) + "\n..." : rawContent;
 
         String timestamp = java.time.Instant.now().toString();
-        String prompt = """
-                Analyze this markdown document and generate ONLY the OKF YAML frontmatter block for it.
-                The frontmatter will be prepended to the original document body.
-
-                File: %s
-
-                Document content:
-                %s
-
-                Respond with ONLY the YAML frontmatter block (including the --- delimiters). Nothing else.
-                Use EXACTLY this format (OKF spec v0.1 §4.1):
-
-                ---
-                type: <concept|reference|playbook>
-                title: <meaningful human-readable title, NOT just the filename>
-                description: <ONE sentence max 120 chars — what this document covers, used for index navigation>
-                resource: %s
-                tags: [github, %s]
-                timestamp: %s
-                ---
-                """.formatted(gitPath, preview, sourceUrl, repo, timestamp);
+        String prompt = extractionMdPrompt.render(Map.of(
+                "gitPath", gitPath,
+                "preview", preview,
+                "sourceUrl", sourceUrl,
+                "repo", repo,
+                "timestamp", timestamp
+        ));
 
         try {
             String response = extractionChatClient.prompt().user(prompt).call().content().trim();
@@ -278,40 +283,14 @@ public class GitHubSyncService {
                 : rawContent;
 
         String timestamp = java.time.Instant.now().toString();
-        String prompt = """
-                You are an OKF (Open Knowledge Format) knowledge curator.
-                Extract and document the KEY KNOWLEDGE from this source file as a structured OKF knowledge document.
-                Write for UNDERSTANDING — explain the concept, pattern, or idea in plain language.
-                Do NOT just describe what the code does line by line.
-
-                File: %s
-                GitHub: %s
-
-                Content:
-                ```%s
-                %s
-                ```
-
-                Respond with ONLY a valid OKF markdown document. Use EXACTLY this structure (OKF spec v0.1 §4.1):
-
-                ---
-                type: <concept|reference|playbook>
-                title: <short human-readable title, e.g. "Singleton Design Pattern in Java">
-                description: <ONE sentence max 120 chars — what key knowledge this captures for index navigation>
-                resource: %s
-                tags: [github, %s]
-                timestamp: %s
-                ---
-
-                # <title>
-
-                <2-3 paragraphs explaining the concept, pattern, or knowledge in plain language. Why does it matter? What is the core idea?>
-
-                ## Key Points
-                - <key insight 1>
-                - <key insight 2>
-                - <key insight 3>
-                """.formatted(gitPath, sourceUrl, lang, truncated, sourceUrl, repo, timestamp);
+        String prompt = extractionCodePrompt.render(Map.of(
+                "gitPath", gitPath,
+                "sourceUrl", sourceUrl,
+                "lang", lang,
+                "truncated", truncated,
+                "repo", repo,
+                "timestamp", timestamp
+        ));
 
         try {
             String response = extractionChatClient.prompt().user(prompt).call().content();

@@ -1,4 +1,4 @@
-package com.llm.okf.web;
+package com.llm.okf.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

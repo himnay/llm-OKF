@@ -113,17 +113,15 @@ After all files are processed, `OkfIndexGenerator` walks the knowledge base dire
 ```markdown
 # OKF Knowledge Base Index
 Source: https://github.com/owner/repo
-Last synced: 2026-06-29T10:30:00Z
-Total files: 42
 
 ## concepts/
 
-- `concepts/singleton-pattern.md` — How to implement the Singleton pattern in Java
-- `concepts/observer-pattern.md` — How the Observer pattern decouples producers from consumers
+* [Singleton Design Pattern](concepts/singleton-pattern.md) - How to implement the Singleton pattern in Java
+* [Observer Pattern](concepts/observer-pattern.md) - How the Observer pattern decouples producers from consumers
 
 ## docs/
 
-- `docs/architecture.md` — Overview of the system architecture and module responsibilities
+* [Architecture Overview](docs/architecture.md) - Overview of the system architecture and module responsibilities
 ```
 
 The index is intentionally small — it contains only paths and one-line descriptions, not full file content. Keeping it small is critical because the entire index is sent to the LLM at query time. If the index were large, it would consume most of the LLM's context window before any answer could be formed.
@@ -136,7 +134,7 @@ When you send a question to `POST /api/v1/okf/chat`, the following four steps ha
 
 **Step 1 — Load index.md**
 
-`OkfNavigator` reads `index.md` from disk. This is the map of the entire knowledge base — all file paths with their one-line descriptions. Because it is small (only metadata, no content), it fits easily in the LLM context.
+`OkfNavigator` reads `index.md` from disk. This is the map of the entire knowledge base — all file paths with their one-line descriptions. Because it is small (only metadata, no content), it fits easily in the LLM context. The index is cached in memory for 60 seconds to avoid disk I/O on every query.
 
 **Step 2 — LLM selects relevant files**
 
@@ -146,7 +144,7 @@ The LLM receives the full content of `index.md` and your question. It is asked t
 ["concepts/singleton-pattern.md", "concepts/factory-pattern.md"]
 ```
 
-The navigation prompt limits the response to at most `maxFilesPerQuery` files (default: 5) and instructs the LLM to select only directly relevant files. Irrelevant files are not loaded — this keeps the final prompt focused.
+The navigation prompt limits the response to at most `maxFilesPerQuery` files (default: 5) and instructs the LLM to select only directly relevant files. Irrelevant files are not loaded — this keeps the final prompt focused. The response is parsed using Jackson `ObjectMapper` for robustness against malformed output.
 
 **Step 3 — Load full file content from disk**
 
@@ -154,7 +152,7 @@ The navigation prompt limits the response to at most `maxFilesPerQuery` files (d
 
 **Step 4 — LLM answers using full file content**
 
-`OkfChatService` builds a final prompt that includes all the loaded file content and your original question. The LLM produces an answer grounded in the exact knowledge from those files. The HTTP response includes the answer text plus the list of source files that were used.
+`OkfChatService` builds a final prompt that includes all the loaded file content (with title and tags from frontmatter) and your original question. The LLM produces an answer grounded in the exact knowledge from those files. The HTTP response includes the answer text plus the list of source files that were used.
 
 ---
 
@@ -183,23 +181,30 @@ llm-OKF/                    ← Parent aggregator (packaging=pom)
 │           └── OkfIndexGenerator.java    Generates index.md from the synced file tree
 │
 └── okf-chat/               ← Spring Boot runnable application (fat jar)
-    └── src/main/java/com/llm/okf/
-        ├── LlmOkfApplication.java        Main class with @EnableAsync @EnableScheduling
-        ├── config/
-        │   └── ChatClientConfig.java     Spring AI ChatClient bean wired to Ollama
-        ├── controller/
-        │   └── OkfController.java        REST endpoints (chat, stream, index, files, sync)
-        ├── model/
-        │   ├── ChatRequest.java          Input DTO: { question: string }
-        │   ├── ChatResponse.java         Output DTO: answer + sourcesUsed + filesLoaded
-        │   └── OkfFile.java              Parsed OKF file with frontmatter fields and body
-        ├── navigator/
-        │   └── OkfNavigator.java         Reads index, navigates via LLM, loads files
-        ├── service/
-        │   └── OkfChatService.java       Orchestrates navigate → load → answer
-        └── web/
-            ├── ApiError.java             Structured error response
-            └── GlobalExceptionHandler.java  @RestControllerAdvice for global error handling
+    └── src/main/
+        ├── java/com/llm/okf/
+        │   ├── LlmOkfApplication.java        Main class with @EnableAsync @EnableScheduling
+        │   ├── config/
+        │   │   └── ChatClientConfig.java     Spring AI ChatClient beans + ObjectMapper bean
+        │   ├── controller/
+        │   │   └── OkfController.java        REST endpoints (chat, stream, index, files, sync)
+        │   ├── exception/
+        │   │   ├── ApiError.java             Structured error response
+        │   │   └── GlobalExceptionHandler.java  @RestControllerAdvice for global error handling
+        │   ├── model/
+        │   │   ├── ChatRequest.java          Input DTO: { question: string }
+        │   │   ├── ChatResponse.java         Output DTO: answer + sourcesUsed + filesLoaded
+        │   │   └── OkfFile.java              Parsed OKF file with frontmatter fields and body
+        │   ├── navigator/
+        │   │   └── OkfNavigator.java         Reads index, navigates via LLM, loads files
+        │   └── service/
+        │       └── OkfChatService.java       Orchestrates navigate → load → answer
+        └── resources/
+            └── prompts/                      Spring AI StringTemplate prompt files
+                ├── navigation.st             Navigation LLM prompt (index + query → file paths)
+                ├── system.st                 Chat system prompt (context → answer)
+                ├── extraction-md.st          Markdown frontmatter generation prompt
+                └── extraction-code.st        Code-to-knowledge document generation prompt
 ```
 
 **`okf-github`** is a plain library module. It produces a regular `.jar`, not a fat jar. It has no `main` class. It handles everything related to the GitHub data source: API calls, SHA tracking, scheduling, and OKF document generation.
@@ -217,6 +222,21 @@ If you want to sync knowledge from Confluence, for example:
 5. Add `<dependency>okf-confluence</dependency>` in `okf-chat/pom.xml`
 
 The navigator and chat service do not need to change at all — they read from `knowledgeBasePath` on disk, regardless of where the files came from. GitHub files, Confluence files, and future sources all live side by side in the same knowledge base directory.
+
+---
+
+## Prompt Templates
+
+All LLM prompts are stored as **Spring AI StringTemplate (`.st`) files** under `okf-chat/src/main/resources/prompts/`. Variables use `{variableName}` syntax and are injected at runtime via `PromptTemplate.render(Map.of(...))`. `PromptTemplate` instances are constructed once at startup and reused across requests.
+
+| File | Used by | Variables |
+|------|---------|-----------|
+| `navigation.st` | `OkfNavigator.findRelevantFiles()` | `index`, `query`, `maxFilesPerQuery` |
+| `system.st` | `OkfChatService` (chat + stream) | `context` |
+| `extraction-md.st` | `GitHubSyncService` — markdown files | `gitPath`, `preview`, `sourceUrl`, `repo`, `timestamp` |
+| `extraction-code.st` | `GitHubSyncService` — code files | `gitPath`, `sourceUrl`, `lang`, `truncated`, `repo`, `timestamp` |
+
+To change how the LLM selects files, how it answers questions, or how it generates OKF documents — edit the `.st` files directly. No Java recompile needed with DevTools active.
 
 ---
 
@@ -259,11 +279,14 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 - Java 21 or higher
 - Maven 3.9 or higher
 - PostgreSQL database (local or Docker)
-- Ollama running locally with a model pulled
+- Ollama running locally with at least one model pulled
 
 ```bash
-# Pull the LLM model
-ollama pull llama3.1:8b
+# Pull the default chat/navigation model
+ollama pull llama4:scout
+
+# Pull the extraction model (used for converting source files to OKF docs)
+ollama pull qwen3.6:27b
 
 # Start PostgreSQL via Docker (one-liner for local dev)
 docker run -d --name okf-postgres \
@@ -295,7 +318,7 @@ Or export the variables first:
 ```bash
 export GITHUB_REPO_URL=https://github.com/your-org/your-repo
 export GITHUB_TOKEN=ghp_your_token          # omit for public repos
-export OLLAMA_MODEL=llama3.1:8b             # optional, this is the default
+export OLLAMA_MODEL=llama4:scout            # optional, this is the default
 mvn -pl okf-chat spring-boot:run
 ```
 
@@ -308,27 +331,65 @@ Subsequent syncs run automatically every hour.
 
 ---
 
+## Development
+
+### Hot Reload with Spring DevTools
+
+`spring-boot-devtools` is included in `okf-chat` (optional scope — not packaged in the fat jar). While running via `mvn spring-boot:run`, any class or resource change triggers an automatic restart. In IntelliJ, enable **Build project automatically** (`Settings → Build, Execution, Deployment → Compiler`) and optionally enable registry key `compiler.automake.allow.when.app.running`.
+
+Prompt templates (`.st` files) under `src/main/resources/prompts/` are classpath resources — DevTools detects changes to them and restarts the context. This means you can tune prompts and see results without a manual restart.
+
+### Running Tests
+
+```bash
+# Full test suite
+mvn test
+
+# Single module
+mvn -pl okf-chat test
+```
+
+The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the full Spring context assembles correctly, including all `ChatClient` beans, prompt template loading, and `ObjectMapper` wiring.
+
+---
+
 ## Configuration Reference
 
 All settings have sensible defaults. The only required variable is `GITHUB_REPO_URL`.
 
-| Environment Variable    | Default                              | Description                                              |
-|-------------------------|--------------------------------------|----------------------------------------------------------|
-| `GITHUB_REPO_URL`       | *(required)*                         | Full URL of the GitHub repo to sync                      |
-| `GITHUB_TOKEN`          | *(empty)*                            | Personal access token — required for private repos       |
-| `SERVER_PORT`           | `8090`                               | HTTP port                                                |
-| `OLLAMA_BASE_URL`       | `http://localhost:11434`             | Ollama server URL                                        |
-| `OLLAMA_MODEL`          | `llama3.1:8b`                        | Model for both chat and LLM knowledge extraction         |
-| `OLLAMA_CTX`            | `32768`                              | Context window in tokens                                 |
-| `OKF_KB_PATH`           | `/home/himansu/projects/okf`         | Directory where OKF files are stored on disk             |
-| `OKF_MAX_FILES`         | `5`                                  | Max files loaded per query (navigation step)             |
-| `OKF_SYNC_INTERVAL_MS`  | `3600000`                            | Sync frequency in ms (default 1 hour)                    |
-| `OKF_SYNC_ENABLED`      | `true`                               | Set to `false` to disable the scheduler                  |
-| `OKF_SYNC_ON_STARTUP`   | `true`                               | Sync immediately on startup                              |
-| `OKF_LLM_SUMMARIZE`     | `true`                               | Use LLM to generate knowledge docs; `false` wraps raw    |
-| `DB_URL`                | `jdbc:postgresql://localhost:5432/okf` | PostgreSQL JDBC URL                                    |
-| `DB_USER`               | `okf`                                | Database username                                        |
-| `DB_PASSWORD`           | `okf`                                | Database password                                        |
+| Environment Variable      | Default                                | Description                                                     |
+|---------------------------|----------------------------------------|-----------------------------------------------------------------|
+| `GITHUB_REPO_URL`         | *(required)*                           | Full URL of the GitHub repo to sync                             |
+| `GITHUB_TOKEN`            | *(empty)*                              | Personal access token — required for private repos              |
+| `SERVER_PORT`             | `8090`                                 | HTTP port                                                       |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434`               | Ollama server URL                                               |
+| `OLLAMA_MODEL`            | `llama4:scout`                         | Primary chat model — answers user questions                     |
+| `OLLAMA_CTX`              | `4096`                                 | Context window in tokens for the primary chat model             |
+| `OKF_NAV_MODEL`           | `llama4:scout`                         | Navigation model — fast small model that selects files from index|
+| `OKF_EXTRACTION_MODEL`    | `qwen3.6:27b`                          | Extraction model — quality model that converts files to OKF docs|
+| `OKF_KB_PATH`             | `/home/himansu/projects/okf`           | Directory where OKF files are stored on disk                    |
+| `OKF_MAX_FILES`           | `5`                                    | Max files loaded per query (navigation step)                    |
+| `OKF_SYNC_INTERVAL_MS`    | `3600000`                              | Sync frequency in ms (default 1 hour)                           |
+| `OKF_SYNC_ENABLED`        | `true`                                 | Set to `false` to disable the scheduler                         |
+| `OKF_SYNC_ON_STARTUP`     | `true`                                 | Sync immediately on startup                                     |
+| `OKF_LLM_SUMMARIZE`       | `true`                                 | Use LLM to generate knowledge docs; `false` wraps raw content   |
+| `DB_URL`                  | `jdbc:postgresql://localhost:5432/okf` | PostgreSQL JDBC URL                                             |
+| `DB_USER`                 | `okf`                                  | Database username                                               |
+| `DB_PASSWORD`             | `okf`                                  | Database password                                               |
+| `REDIS_HOST`              | `localhost`                            | Redis host                                                      |
+| `REDIS_PORT`              | `6379`                                 | Redis port                                                      |
+
+### Three LLM Roles
+
+The application uses **three separate LLM clients**, each tuned for its task:
+
+| Role | Bean | Model env var | Temperature | Purpose |
+|------|------|---------------|-------------|---------|
+| Chat | `chatClient` (primary) | `OLLAMA_MODEL` | 0.3 | Answers user questions with full file context |
+| Navigation | `navigationChatClient` | `OKF_NAV_MODEL` | 0.0 | Selects relevant files from index — deterministic |
+| Extraction | `extractionChatClient` | `OKF_EXTRACTION_MODEL` | 0.2 | Converts source files into OKF knowledge docs at sync time |
+
+Using separate models lets you balance speed and quality: navigation runs on a fast small model (low latency per query), extraction runs on a quality model (runs once per file at sync time, quality matters more than speed).
 
 ---
 
@@ -384,7 +445,7 @@ GET /api/v1/okf/index
 
 ### List All Knowledge Files
 
-Returns a JSON array of all OKF files with their frontmatter metadata (title, type, tags, description, related). Useful for inspecting what the knowledge base contains without reading individual files.
+Returns a JSON array of all OKF files with their frontmatter metadata (title, type, tags, related). Useful for inspecting what the knowledge base contains without reading individual files.
 
 ```http
 GET /api/v1/okf/files
@@ -425,6 +486,8 @@ Returns the result of the most recent sync without triggering a new one.
 GET /api/v1/okf/sync/status
 ```
 
+Returns `204 No Content` if no sync has run since startup.
+
 ### Infrastructure Endpoints
 
 ```http
@@ -445,7 +508,7 @@ All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/proj
 /home/himansu/projects/okf/
 ├── index.md                              ← Auto-generated navigation index
 ├── README.md                             ← From GitHub root (with OKF frontmatter added)
-├── docs/0
+├── docs/
 │   ├── architecture.md                   ← Markdown files: original body + generated frontmatter
 │   └── getting-started.md
 └── src/
@@ -464,6 +527,26 @@ Key points about how files are stored:
 - Files **deleted from GitHub** are deleted from disk on the next sync
 - `index.md` is always **regenerated fresh** and is never synced from GitHub
 - The knowledge base directory is plain files — you can browse it with any text editor, search it with `grep`, or version it with git
+
+---
+
+## Implementation Notes
+
+### Frontmatter Parsing
+
+YAML frontmatter is parsed using **SnakeYAML** (`org.yaml.snakeyaml.Yaml`), which is already on the classpath via Spring Boot. This handles all standard YAML types — strings, lists, nested maps — correctly. The previous hand-rolled parser that split on `:` and `[` has been replaced.
+
+### Index Caching
+
+`OkfNavigator.loadIndex()` caches the content of `index.md` in memory for **60 seconds**. Every query previously read the file from disk on every request. The cache uses a `volatile` field + expiry timestamp — no external cache library required.
+
+### JSON Path Parsing
+
+Navigation LLM responses (a JSON array of file paths) are parsed with **Jackson `ObjectMapper`**. The parser extracts the `[...]` array substring first, tolerating any surrounding explanation text the model may emit. This replaces the previous regex which silently returned empty on malformed responses.
+
+### Skipped File Counter
+
+The sync loop now increments `skipped` **inline** when a file is unchanged (matching SHA + model). The previous implementation had a redundant post-loop stream pass that re-counted unchanged files separately, which made the counter logic split across two places and harder to follow.
 
 ---
 

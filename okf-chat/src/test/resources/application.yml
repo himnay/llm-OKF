@@ -3,7 +3,7 @@ spring:
     ollama:
       base-url: http://localhost:11434
       chat:
-        model: llama3.1:8b
+        model: llama4:scout
   datasource:
     url: jdbc:postgresql://localhost:5432/okf
     username: okf
@@ -15,8 +15,8 @@ app:
   okf:
     knowledge-base-path: /tmp/okf-test
     max-files-per-query: 5
-    navigation-model: llama3.1:8b
-    extraction-model: llama3.1:8b
+    navigation-model: llama4:scout
+    extraction-model: llama4:scout
     sync:
       github-url: https://github.com/test/test
       github-token: ""

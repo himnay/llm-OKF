@@ -6,7 +6,7 @@ import com.llm.okf.model.OkfFile;
 import com.llm.okf.model.SyncStatus;
 import com.llm.okf.navigator.OkfNavigator;
 import com.llm.okf.service.GitHubSyncService;
-import com.llm.okf.service.OkfChatService;
+import com.llm.okf.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,7 +24,7 @@ import java.util.List;
 @Tag(name = "OKF", description = "Open Knowledge Format — GitHub-synced structured markdown knowledge base")
 public class OkfController {
 
-    private final OkfChatService chatService;
+    private final ChatService chatService;
     private final OkfNavigator navigator;
     private final GitHubSyncService syncService;
 
@@ -48,7 +48,7 @@ public class OkfController {
     public ResponseEntity<String> index() {
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_PLAIN)
-                .body(navigator.loadIndex());
+                .body(navigator.readIndexFile());
     }
 
     /** Lists all OKF knowledge files under the knowledge base directory with parsed frontmatter metadata. */
