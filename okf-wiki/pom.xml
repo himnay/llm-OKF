@@ -9,8 +9,8 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>okf-github</artifactId>
-    <name>okf-github</name>
+    <artifactId>okf-wiki</artifactId>
+    <name>okf-wiki</name>
     <description>OKF data-source module — syncs knowledge from a GitHub repository</description>
 
     <dependencies>

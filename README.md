@@ -162,7 +162,8 @@ The project is structured as a **multi-module Maven project**. Each data source 
 
 ```
 llm-OKF/                    ← Parent aggregator (packaging=pom)
-├── okf-github/             ← Data source module: syncs from GitHub
+├── okf-llm-models/         ← Data source module: Hugging Face model catalog via MongoDB
+├── okf-wiki/               ← Data source module: syncs from GitHub
 │   └── src/main/java/com/llm/okf/
 │       ├── config/
 │       │   ├── OkfProperties.java        @ConfigurationProperties (all app settings)
@@ -207,9 +208,11 @@ llm-OKF/                    ← Parent aggregator (packaging=pom)
                 └── extraction-code.st        Code-to-knowledge document generation prompt
 ```
 
-**`okf-github`** is a plain library module. It produces a regular `.jar`, not a fat jar. It has no `main` class. It handles everything related to the GitHub data source: API calls, SHA tracking, scheduling, and OKF document generation.
+**`okf-wiki`** is a plain library module. It produces a regular `.jar`, not a fat jar. It has no `main` class. It handles everything related to the GitHub data source: API calls, SHA tracking, scheduling, and OKF document generation.
 
-**`okf-chat`** is the runnable Spring Boot application. It depends on `okf-github` and adds the HTTP layer. The `okf-github` module is just a Maven dependency from `okf-chat`'s perspective.
+**`okf-llm-models`** is a plain library module (regular `.jar`, no `main` class). A scheduler syncs the most-downloaded LLM models from the Hugging Face Hub into MongoDB (`llm_models` collection), then exposes the catalog as OKF files in two patterns: **materialized** files that embed the data (one file per model under `OKF_LLM_KB_PATH`, refreshed each sync), and **query** files (`type: query`) that contain only a MongoDB query and are resolved live via `GET /api/v1/okf/llm-models/resolve?file=<name>`. See `okf-llm-models-REQUIREMENTS.md` and SPEC.md §4.5.
+
+**`okf-chat`** is the runnable Spring Boot application. It depends on `okf-wiki` and `okf-llm-models` and adds the HTTP layer. The data-source modules are just Maven dependencies from `okf-chat`'s perspective.
 
 ### How to Add a New Data Source Module
 
@@ -304,7 +307,7 @@ docker run -d --name okf-postgres \
 Build and run the `okf-chat` module from the project root:
 
 ```bash
-# Build the entire project (compiles okf-github then okf-chat)
+# Build the entire project (compiles okf-wiki then okf-chat)
 mvn clean package -DskipTests
 
 # Run with required environment variables
@@ -367,7 +370,7 @@ All settings have sensible defaults. The only required variable is `GITHUB_REPO_
 | `OLLAMA_CTX`              | `4096`                                 | Context window in tokens for the primary chat model             |
 | `OKF_NAV_MODEL`           | `llama4:scout`                         | Navigation model — fast small model that selects files from index|
 | `OKF_EXTRACTION_MODEL`    | `qwen3.6:27b`                          | Extraction model — quality model that converts files to OKF docs|
-| `OKF_KB_PATH`             | `/home/himansu/projects/okf`           | Directory where OKF files are stored on disk                    |
+| `OKF_KB_PATH`             | `/home/himansu/projects/okf/wiki`      | Directory where OKF files are stored on disk                    |
 | `OKF_MAX_FILES`           | `5`                                    | Max files loaded per query (navigation step)                    |
 | `OKF_SYNC_INTERVAL_MS`    | `3600000`                              | Sync frequency in ms (default 1 hour)                           |
 | `OKF_SYNC_ENABLED`        | `true`                                 | Set to `false` to disable the scheduler                         |
@@ -502,10 +505,10 @@ GET /api-docs             # OpenAPI JSON specification
 
 ## Knowledge Base on Disk
 
-All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/projects/okf`):
+All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/projects/okf/wiki`):
 
 ```
-/home/himansu/projects/okf/
+/home/himansu/projects/okf/wiki/
 ├── index.md                              ← Auto-generated navigation index
 ├── README.md                             ← From GitHub root (with OKF frontmatter added)
 ├── docs/

@@ -30,6 +30,20 @@ public class GlobalExceptionHandler {
         return ApiError.of(400, "Validation Failed", "Request validation failed", fieldErrors);
     }
 
+    /** Required query/path parameter absent — e.g. calling /resolve without ?file=. */
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ApiError handleMissingParameter(org.springframework.web.bind.MissingServletRequestParameterException ex) {
+        return ApiError.of(400, "Bad Request", ex.getMessage());
+    }
+
+    /** Invalid client input outside bean validation — e.g. a bad OKF query-file path or unsafe query. */
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ApiError handleIllegalArgument(IllegalArgumentException ex) {
+        return ApiError.of(400, "Bad Request", ex.getMessage());
+    }
+
     /** Client disconnected before LLM finished — not an application error. */
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleClientDisconnect(AsyncRequestNotUsableException ex) {

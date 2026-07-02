@@ -10,6 +10,8 @@ spring:
     password: okf
   flyway:
     enabled: false
+  mongodb:
+    uri: mongodb://localhost:27017/okf-test
 
 app:
   okf:
@@ -24,3 +26,13 @@ app:
       enabled: false
       sync-on-startup: false
       use-llm-summarization: false
+    llm-models:
+      knowledge-base-path: /tmp/okf-test-llm-models
+      query-base-path: /tmp/okf-test-llm-models-live
+      api-url: https://huggingface.co/api/models
+      min-models: 50
+      page-size: 50
+      interval-ms: 86400000
+      enabled: false
+      sync-on-startup: false
+      hf-token: ""

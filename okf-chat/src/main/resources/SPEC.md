@@ -228,6 +228,47 @@ its expected SLA. See the [orders table](/tables/orders.md).
 2. …
 ```
 
+### 4.5 Query-backed concepts (live views)
+
+A concept MAY carry its content as a *query definition* instead of
+embedded data. Such concepts use `type: query` and add a `query`
+extension block to the frontmatter. The body contains no data; a
+resolver executes the query against the referenced store at read time
+and appends the results, so consumers always see current data.
+
+This complements materialized concepts: a materialized concept copies
+data out of a store into the file (refresh = rewrite), while a query
+concept is a live view over the store (refresh = every read).
+
+```markdown
+---
+type: query
+title: Local-runnable models
+description: Live view — models that can run on local hardware, fetched at read time
+tags: [llm-model, live-query]
+timestamp: 2026-07-02T10:00:00Z
+query:
+  store: mongodb
+  database: okf
+  collection: llm_models
+  filter: '{ "canRunLocally": true }'
+  projection: '{ "name": 1, "modelType": 1 }'
+  sort: '{ "downloads": -1 }'
+  limit: 100
+---
+
+# Local-runnable models
+
+The frontmatter `query` block is executed when this file is resolved —
+the data is NOT stored in this file.
+```
+
+The `query` block is producer-defined per store. Resolvers MUST treat
+it as read-only: restrict it to fetch operations, allow-list target
+collections, reject operators that execute server-side code, and cap
+result sizes. Consumers without a resolver MUST tolerate query concepts
+gracefully by presenting the definition itself.
+
 ---
 
 ## 5. Cross-linking

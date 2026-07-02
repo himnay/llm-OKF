@@ -16,7 +16,12 @@
     <dependencies>
         <dependency>
             <groupId>com.example</groupId>
-            <artifactId>okf-github</artifactId>
+            <artifactId>okf-wiki</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>okf-llm-models</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

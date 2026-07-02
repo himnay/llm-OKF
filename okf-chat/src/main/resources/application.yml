@@ -9,6 +9,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  mongodb:
+    uri: ${MONGO_URI:mongodb://okf:okf@localhost:27017/okf?authSource=admin}
   mvc:
     async:
       request-timeout: 120000
@@ -63,7 +65,7 @@ springdoc:
 
 app:
   okf:
-    knowledge-base-path: ${OKF_KB_PATH:/home/himansu/projects/okf}
+    knowledge-base-path: ${OKF_KB_PATH:/home/himansu/projects/okf/wiki}
     max-files-per-query: ${OKF_MAX_FILES:5}
     navigation-model: ${OKF_NAV_MODEL:llama4:scout}
     extraction-model: ${OKF_EXTRACTION_MODEL:qwen3.6:27b}
@@ -74,3 +76,13 @@ app:
       enabled: ${OKF_SYNC_ENABLED:true}
       sync-on-startup: ${OKF_SYNC_ON_STARTUP:true}
       use-llm-summarization: ${OKF_LLM_SUMMARIZE:true}
+    llm-models:
+      knowledge-base-path: ${OKF_LLM_KB_PATH:/home/himansu/projects/okf/llm-models}
+      query-base-path: ${OKF_LLM_QUERY_KB_PATH:/home/himansu/projects/okf/llm-models-live}
+      api-url: ${OKF_LLM_HF_API_URL:https://huggingface.co/api/models}
+      min-models: ${OKF_LLM_MIN_MODELS:50}
+      page-size: ${OKF_LLM_PAGE_SIZE:50}
+      interval-ms: ${OKF_LLM_SYNC_INTERVAL_MS:86400000}
+      enabled: ${OKF_LLM_SYNC_ENABLED:true}
+      sync-on-startup: ${OKF_LLM_SYNC_ON_STARTUP:true}
+      hf-token: ${HF_TOKEN:}
