@@ -10,7 +10,6 @@ updates:
         patterns: ["org.springframework*"]
       testing:
         patterns: ["*junit*", "*testcontainers*", "*mockito*"]
-
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
