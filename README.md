@@ -60,15 +60,15 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 
 The trade-off is that OKF relies on the LLM's ability to reason over the index and select relevant files — it works best when files have clear, descriptive `description` frontmatter and when the repository contains conceptual knowledge (not millions of tiny files).
 
-| Aspect         | RAG                              | OKF                                |
-|----------------|----------------------------------|------------------------------------|
-| Storage        | Vector DB                        | Plain markdown files on disk       |
-| Retrieval      | Cosine similarity search         | LLM reads index, selects files     |
-| Chunking       | Yes — 500-token chunks           | No — whole files loaded            |
-| Infrastructure | Embedding model + vector DB      | Just filesystem + Ollama           |
-| Source updates | Re-embed on change               | Auto-sync from GitHub hourly       |
-| Readable       | No — vectors are opaque          | Yes — markdown files               |
-| Best for       | Large corpora, semantic search   | Structured repos, curated knowledge|
+| Aspect         | RAG                              | OKF                                 |
+|----------------|----------------------------------|-------------------------------------|
+| Storage        | Vector DB                        | Plain markdown files on disk        |
+| Retrieval      | Cosine similarity search         | LLM reads index, selects files      |
+| Chunking       | Yes — 500-token chunks           | No — whole files loaded             |
+| Infrastructure | Embedding model + vector DB      | Just filesystem + Ollama            |
+| Source updates | Re-embed on change               | Auto-sync from GitHub hourly        |
+| Readable       | No — vectors are opaque          | Yes — markdown files                |
+| Best for       | Large corpora, semantic search   | Structured repos, curated knowledge |
 
 ---
 
@@ -163,6 +163,7 @@ The project is structured as a **multi-module Maven project**. Each data source 
 ```
 llm-OKF/                    ← Parent aggregator (packaging=pom)
 ├── okf-llm-models/         ← Data source module: Hugging Face model catalog via MongoDB
+├── okf-mcp/                ← MCP tools: expose the model catalog to agents + web enrichment
 ├── okf-wiki/               ← Data source module: syncs from GitHub
 │   └── src/main/java/com/llm/okf/
 │       ├── config/
@@ -212,7 +213,9 @@ llm-OKF/                    ← Parent aggregator (packaging=pom)
 
 **`okf-llm-models`** is a plain library module (regular `.jar`, no `main` class). A scheduler syncs the most-downloaded LLM models from the Hugging Face Hub into MongoDB (`llm_models` collection), then exposes the catalog as OKF files in two patterns: **materialized** files that embed the data (one file per model under `OKF_LLM_KB_PATH`, refreshed each sync), and **query** files (`type: query`) that contain only a MongoDB query and are resolved live via `GET /api/v1/okf/llm-models/resolve?file=<name>`. See `okf-llm-models-REQUIREMENTS.md` and SPEC.md §4.5.
 
-**`okf-chat`** is the runnable Spring Boot application. It depends on `okf-wiki` and `okf-llm-models` and adds the HTTP layer. The data-source modules are just Maven dependencies from `okf-chat`'s perspective.
+**`okf-mcp`** is a plain library module exposing the model catalog as **MCP tools** (Spring AI MCP server, SSE endpoint `/sse`): `searchModels` (keyword search), `getModelKnowledge` (full OKF document), and `enrichModelDetails` — fetches the model's card from huggingface.co and has the local LLM write a 1-2 page profile (description, comparisons, speed, minimum local configuration), cached in MongoDB `llm_model_details`. The same tools are registered on the chat client, so `/chat` answers model questions from live catalog data. The enrichment system prompt lives in `okf-mcp/src/main/resources/prompts/enrichment.st`.
+
+**`okf-chat`** is the runnable Spring Boot application. It depends on `okf-wiki`, `okf-llm-models`, and `okf-mcp` and adds the HTTP layer. The data-source modules are just Maven dependencies from `okf-chat`'s perspective.
 
 ### How to Add a New Data Source Module
 
@@ -232,12 +235,12 @@ The navigator and chat service do not need to change at all — they read from `
 
 All LLM prompts are stored as **Spring AI StringTemplate (`.st`) files** under `okf-chat/src/main/resources/prompts/`. Variables use `{variableName}` syntax and are injected at runtime via `PromptTemplate.render(Map.of(...))`. `PromptTemplate` instances are constructed once at startup and reused across requests.
 
-| File | Used by | Variables |
-|------|---------|-----------|
-| `navigation.st` | `OkfNavigator.findRelevantFiles()` | `index`, `query`, `maxFilesPerQuery` |
-| `system.st` | `OkfChatService` (chat + stream) | `context` |
-| `extraction-md.st` | `GitHubSyncService` — markdown files | `gitPath`, `preview`, `sourceUrl`, `repo`, `timestamp` |
-| `extraction-code.st` | `GitHubSyncService` — code files | `gitPath`, `sourceUrl`, `lang`, `truncated`, `repo`, `timestamp` |
+| File                 | Used by                              | Variables                                                        |
+|----------------------|--------------------------------------|------------------------------------------------------------------|
+| `navigation.st`      | `OkfNavigator.findRelevantFiles()`   | `index`, `query`, `maxFilesPerQuery`                             |
+| `system.st`          | `OkfChatService` (chat + stream)     | `context`                                                        |
+| `extraction-md.st`   | `GitHubSyncService` — markdown files | `gitPath`, `preview`, `sourceUrl`, `repo`, `timestamp`           |
+| `extraction-code.st` | `GitHubSyncService` — code files     | `gitPath`, `sourceUrl`, `lang`, `truncated`, `repo`, `timestamp` |
 
 To change how the LLM selects files, how it answers questions, or how it generates OKF documents — edit the `.st` files directly. No Java recompile needed with DevTools active.
 
@@ -360,37 +363,53 @@ The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the 
 
 All settings have sensible defaults. The only required variable is `GITHUB_REPO_URL`.
 
-| Environment Variable      | Default                                | Description                                                     |
-|---------------------------|----------------------------------------|-----------------------------------------------------------------|
-| `GITHUB_REPO_URL`         | *(required)*                           | Full URL of the GitHub repo to sync                             |
-| `GITHUB_TOKEN`            | *(empty)*                              | Personal access token — required for private repos              |
-| `SERVER_PORT`             | `8090`                                 | HTTP port                                                       |
-| `OLLAMA_BASE_URL`         | `http://localhost:11434`               | Ollama server URL                                               |
-| `OLLAMA_MODEL`            | `llama4:scout`                         | Primary chat model — answers user questions                     |
-| `OLLAMA_CTX`              | `4096`                                 | Context window in tokens for the primary chat model             |
-| `OKF_NAV_MODEL`           | `llama4:scout`                         | Navigation model — fast small model that selects files from index|
-| `OKF_EXTRACTION_MODEL`    | `qwen3.6:27b`                          | Extraction model — quality model that converts files to OKF docs|
-| `OKF_KB_PATH`             | `/home/himansu/projects/okf/wiki`      | Directory where OKF files are stored on disk                    |
-| `OKF_MAX_FILES`           | `5`                                    | Max files loaded per query (navigation step)                    |
-| `OKF_SYNC_INTERVAL_MS`    | `3600000`                              | Sync frequency in ms (default 1 hour)                           |
-| `OKF_SYNC_ENABLED`        | `true`                                 | Set to `false` to disable the scheduler                         |
-| `OKF_SYNC_ON_STARTUP`     | `true`                                 | Sync immediately on startup                                     |
-| `OKF_LLM_SUMMARIZE`       | `true`                                 | Use LLM to generate knowledge docs; `false` wraps raw content   |
-| `DB_URL`                  | `jdbc:postgresql://localhost:5432/okf` | PostgreSQL JDBC URL                                             |
-| `DB_USER`                 | `okf`                                  | Database username                                               |
-| `DB_PASSWORD`             | `okf`                                  | Database password                                               |
-| `REDIS_HOST`              | `localhost`                            | Redis host                                                      |
-| `REDIS_PORT`              | `6379`                                 | Redis port                                                      |
+| Environment Variable       | Default                                                  | Description                                                       |
+|----------------------------|----------------------------------------------------------|-------------------------------------------------------------------|
+| `GITHUB_REPO_URL`          | *(required)*                                             | Full URL of the GitHub repo to sync                               |
+| `GITHUB_TOKEN`             | *(empty)*                                                | Personal access token — required for private repos                |
+| `SERVER_PORT`              | `8090`                                                   | HTTP port                                                         |
+| `OLLAMA_BASE_URL`          | `http://localhost:11434`                                 | Ollama server URL                                                 |
+| `OLLAMA_MODEL`             | `gemma4:12b`                                             | Primary chat model — answers user questions (tool-capable)        |
+| `OLLAMA_CTX`               | `4096`                                                   | Context window in tokens for the primary chat model               |
+| `OKF_NAV_MODEL`            | `gemma4:12b`                                             | Navigation model — fast small model that selects files from index |
+| `OKF_EXTRACTION_MODEL`     | `qwen3.6:27b`                                            | Extraction model — quality model that converts files to OKF docs  |
+| `OKF_KB_PATH`              | `/home/himansu/projects/okf/wiki`                        | Directory where OKF files are stored on disk                      |
+| `OKF_MAX_FILES`            | `5`                                                      | Max files loaded per query (navigation step)                      |
+| `OKF_SYNC_INTERVAL_MS`     | `3600000`                                                | Sync frequency in ms (default 1 hour)                             |
+| `OKF_SYNC_ENABLED`         | `true`                                                   | Set to `false` to disable the scheduler                           |
+| `OKF_SYNC_ON_STARTUP`      | `true`                                                   | Sync immediately on startup                                       |
+| `OKF_LLM_SUMMARIZE`        | `true`                                                   | Use LLM to generate knowledge docs; `false` wraps raw content     |
+| `DB_URL`                   | `jdbc:postgresql://localhost:5432/okf`                   | PostgreSQL JDBC URL                                               |
+| `DB_USER`                  | `okf`                                                    | Database username                                                 |
+| `DB_PASSWORD`              | `okf`                                                    | Database password                                                 |
+| `REDIS_HOST`               | `localhost`                                              | Redis host                                                        |
+| `REDIS_PORT`               | `6379`                                                   | Redis port                                                        |
+| `MONGO_URI`                | `mongodb://okf:okf@localhost:27017/okf?authSource=admin` | MongoDB connection (LLM model catalog + enrichment cache)         |
+| `OKF_LLM_KB_PATH`          | `/home/himansu/projects/okf/llm-models`                  | Materialized (Pattern A) OKF files for the model catalog          |
+| `OKF_LLM_QUERY_KB_PATH`    | `/home/himansu/projects/okf/llm-models-live`             | Query-view (Pattern B) OKF files                                  |
+| `OKF_LLM_MIN_MODELS`       | `100000`                                                 | Upper cap on synced models (quality gates usually stop earlier)   |
+| `OKF_LLM_PAGE_SIZE`        | `100`                                                    | Models per Hugging Face API page                                  |
+| `OKF_LLM_SORT`             | `downloads`                                              | Feed order: `downloads`, `likes`, or `trendingScore`              |
+| `OKF_LLM_MIN_LIKES`        | `50`                                                     | Quality gate — skip models with fewer community likes             |
+| `OKF_LLM_MIN_DOWNLOADS`    | `10000`                                                  | Quality gate — skip models with fewer downloads                   |
+| `OKF_LLM_SYNC_INTERVAL_MS` | `86400000`                                               | Catalog sync frequency in ms (default 24 h)                       |
+| `OKF_LLM_SYNC_ENABLED`     | `true`                                                   | Set to `false` to disable the catalog scheduler                   |
+| `OKF_LLM_SYNC_ON_STARTUP`  | `true`                                                   | Sync the catalog immediately on startup                           |
+| `HF_TOKEN`                 | *(empty)*                                                | Hugging Face token — higher rate limits + gated model cards       |
+| `OKF_MCP_ENRICH_MODEL`     | `gemma4:12b`                                             | Model that writes web-enriched profiles                           |
+| `OKF_MCP_CARD_MAX_CHARS`   | `12000`                                                  | Max model-card characters fed to the enrichment LLM               |
+| `OKF_MCP_CACHE_TTL_HOURS`  | `168`                                                    | Enriched profile cache TTL (default 7 days)                       |
 
 ### Three LLM Roles
 
 The application uses **three separate LLM clients**, each tuned for its task:
 
-| Role | Bean | Model env var | Temperature | Purpose |
-|------|------|---------------|-------------|---------|
-| Chat | `chatClient` (primary) | `OLLAMA_MODEL` | 0.3 | Answers user questions with full file context |
-| Navigation | `navigationChatClient` | `OKF_NAV_MODEL` | 0.0 | Selects relevant files from index — deterministic |
-| Extraction | `extractionChatClient` | `OKF_EXTRACTION_MODEL` | 0.2 | Converts source files into OKF knowledge docs at sync time |
+| Role       | Bean                   | Model env var          | Temperature  | Purpose                                                             |
+|------------|------------------------|------------------------|--------------|---------------------------------------------------------------------|
+| Chat       | `chatClient` (primary) | `OLLAMA_MODEL`         | 0.3          | Answers user questions with full file context + model-catalog tools |
+| Navigation | `navigationChatClient` | `OKF_NAV_MODEL`        | 0.0          | Selects relevant files from index — deterministic                   |
+| Extraction | `extractionChatClient` | `OKF_EXTRACTION_MODEL` | 0.2          | Converts source files into OKF knowledge docs at sync time          |
+| Enrichment | `enrichmentChatClient` | `OKF_MCP_ENRICH_MODEL` | 0.3          | Writes 1-2 page model profiles from Hugging Face cards              |
 
 Using separate models lets you balance speed and quality: navigation runs on a fast small model (low latency per query), extraction runs on a quality model (runs once per file at sync time, quality matters more than speed).
 
@@ -490,6 +509,49 @@ GET /api/v1/okf/sync/status
 ```
 
 Returns `204 No Content` if no sync has run since startup.
+
+### LLM Model Catalog Endpoints
+
+The Hugging Face model catalog (module `okf-llm-models` + `okf-mcp`) adds its own endpoint group:
+
+```http
+POST /api/v1/okf/llm-models/chat          # Catalog-only chat — LLM answers exclusively from the
+                                          # HF catalog via tools (search → markdown table); no
+                                          # wiki context, one LLM round faster than /okf/chat
+POST /api/v1/okf/llm-models/sync          # Manual catalog sync: HF → MongoDB → OKF files
+GET  /api/v1/okf/llm-models/sync/status   # Last catalog sync result (204 if none yet)
+GET  /api/v1/okf/llm-models/resolve?file=all-local-runnable.md
+                                          # Resolve a Pattern B query OKF file — executes its
+                                          # MongoDB query, returns markdown with live results
+```
+
+Catalog chat example (add `Accept: text/markdown` for a readable markdown response):
+
+```http
+POST /api/v1/okf/llm-models/chat
+Content-Type: application/json
+
+{ "question": "list the top 10 text-generation models that can run locally" }
+```
+
+For plain model listings prefer the `resolve` endpoint — it executes the MongoDB query directly
+and returns instantly with no LLM call.
+
+### MCP Server
+
+The same model-catalog tools are exposed over the Model Context Protocol so external agents
+(Claude Code, IDEs, other apps) can use the knowledge base directly:
+
+```http
+GET  /sse            # MCP SSE handshake — returns the session message endpoint
+POST /mcp/message    # JSON-RPC messages (initialize, tools/list, tools/call)
+```
+
+Tools: `searchModels`, `getModelKnowledge`, `enrichModelDetails`. Example Claude Code registration:
+
+```bash
+claude mcp add okf --transport sse http://localhost:8090/sse
+```
 
 ### Infrastructure Endpoints
 

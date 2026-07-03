@@ -7,7 +7,7 @@
     {
       "_id": "wrk_llm_okf",
       "_type": "workspace",
-      "name": "LLM OKF — GitHub-Synced Knowledge Base",
+      "name": "LLM OKF \u2014 GitHub-Synced Knowledge Base",
       "description": "OKF as a RAG replacement: structured markdown synced from GitHub, deterministic navigation, no vector DB",
       "scope": "collection"
     },
@@ -45,11 +45,16 @@
       "_id": "req_chat",
       "_type": "request",
       "parentId": "fld_chat",
-      "name": "Chat — Ask a Question",
+      "name": "Chat \u2014 Ask a Question",
       "description": "Ask anything. Navigator reads index, selects relevant files from GitHub-synced KB, LLM answers with full context.",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/chat",
-      "headers": [{"name": "Content-Type", "value": "application/json"}],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"question\": \"What topics are covered in this knowledge base?\"\n}"
@@ -59,11 +64,16 @@
       "_id": "req_chat_2",
       "_type": "request",
       "parentId": "fld_chat",
-      "name": "Chat — Sample Query",
+      "name": "Chat \u2014 Sample Query",
       "description": "Example query targeting content from the synced GitHub repo",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/chat",
-      "headers": [{"name": "Content-Type", "value": "application/json"}],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"question\": \"What Java concepts or patterns are covered in the learning repo?\"\n}"
@@ -73,13 +83,19 @@
       "_id": "req_stream",
       "_type": "request",
       "parentId": "fld_chat",
-      "name": "Chat — Stream (SSE)",
+      "name": "Chat \u2014 Stream (SSE)",
       "description": "Same as chat but streams tokens via Server-Sent Events",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/chat/stream",
       "headers": [
-        {"name": "Content-Type", "value": "application/json"},
-        {"name": "Accept", "value": "text/event-stream"}
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "text/event-stream"
+        }
       ],
       "body": {
         "mimeType": "application/json",
@@ -91,7 +107,7 @@
       "_type": "request",
       "parentId": "fld_knowledge",
       "name": "Get OKF Index",
-      "description": "Returns the auto-generated index.md — the navigation file listing all synced knowledge files",
+      "description": "Returns the auto-generated index.md \u2014 the navigation file listing all synced knowledge files",
       "method": "GET",
       "url": "{{ base_url }}/api/v1/okf/index",
       "headers": [],
@@ -151,6 +167,155 @@
       "url": "{{ base_url }}/swagger-ui.html",
       "headers": [],
       "body": {}
+    },
+    {
+      "_id": "fld_llm_models_catalog",
+      "_type": "request_group",
+      "parentId": "wrk_llm_okf",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "LLM Model Catalog",
+      "description": "Hugging Face model catalog \u2014 MongoDB-backed OKF (okf-llm-models + okf-mcp)"
+    },
+    {
+      "_id": "req_llm_chat",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Catalog Chat \u2014 Ask About Models",
+      "description": "Tools-grounded chat over the HF catalog only \u2014 no wiki context",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/chat",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"question\": \"list the top 10 text-generation models that can run locally\"\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_chat_md",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Catalog Chat \u2014 Markdown Response",
+      "description": "Same endpoint, Accept: text/markdown returns readable markdown",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/chat",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "text/markdown"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"question\": \"which whisper models are in the catalog?\"\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_resolve_top",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Resolve Live View \u2014 Top Downloaded",
+      "description": "Pattern B: executes the MongoDB query in the OKF file, instant, no LLM",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=top-downloaded.md",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_resolve_local",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Resolve Live View \u2014 Local Runnable",
+      "description": "",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=all-local-runnable.md",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_resolve_textgen",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Resolve Live View \u2014 Text Generation",
+      "description": "",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=text-generation-models.md",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_sync",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Trigger Catalog Sync",
+      "description": "HF \u2192 MongoDB \u2192 regenerate OKF files (10k models, ~40s)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/sync",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_sync_status",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "Catalog Sync Status",
+      "description": "",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/sync/status",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_mcp_sse",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783107801186,
+      "created": 1783107801186,
+      "name": "MCP Server \u2014 SSE Handshake",
+      "description": "MCP endpoint for external agents; tools: searchModels, getModelKnowledge, enrichModelDetails",
+      "method": "GET",
+      "url": "{{ base_url }}/sse",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {}
     }
   ]
 }

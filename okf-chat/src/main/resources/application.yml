@@ -29,9 +29,18 @@ spring:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
-        model: ${OLLAMA_MODEL:llama4:scout}
+        model: ${OLLAMA_MODEL:gemma4:12b}
         temperature: 0.3
-        num-ctx: ${OLLAMA_CTX:4096}
+        num-ctx: ${OLLAMA_CTX:8192}
+        # long answers (tables, lists) get cut off without this
+        num-predict: ${OLLAMA_NUM_PREDICT:4096}
+        # keep the model loaded between requests — reload costs minutes on iGPU
+        keep-alive: ${OLLAMA_KEEP_ALIVE:60m}
+    mcp:
+      server:
+        name: okf-mcp
+        version: 0.0.1
+        instructions: "OKF LLM model knowledge base — search models, read OKF documents, fetch web-enriched model profiles"
 
 management:
   endpoints:
@@ -67,7 +76,7 @@ app:
   okf:
     knowledge-base-path: ${OKF_KB_PATH:/home/himansu/projects/okf/wiki}
     max-files-per-query: ${OKF_MAX_FILES:5}
-    navigation-model: ${OKF_NAV_MODEL:llama4:scout}
+    navigation-model: ${OKF_NAV_MODEL:gemma4:12b}
     extraction-model: ${OKF_EXTRACTION_MODEL:qwen3.6:27b}
     sync:
       github-url: ${GITHUB_REPO_URL}
@@ -80,9 +89,17 @@ app:
       knowledge-base-path: ${OKF_LLM_KB_PATH:/home/himansu/projects/okf/llm-models}
       query-base-path: ${OKF_LLM_QUERY_KB_PATH:/home/himansu/projects/okf/llm-models-live}
       api-url: ${OKF_LLM_HF_API_URL:https://huggingface.co/api/models}
-      min-models: ${OKF_LLM_MIN_MODELS:50}
-      page-size: ${OKF_LLM_PAGE_SIZE:50}
+      min-models: ${OKF_LLM_MIN_MODELS:100000}
+      page-size: ${OKF_LLM_PAGE_SIZE:100}
+      # quality gates — only well-adopted, community-approved models enter the KB
+      sort: ${OKF_LLM_SORT:downloads}          # downloads | likes | trendingScore
+      min-likes: ${OKF_LLM_MIN_LIKES:50}
+      min-downloads: ${OKF_LLM_MIN_DOWNLOADS:10000}
       interval-ms: ${OKF_LLM_SYNC_INTERVAL_MS:86400000}
       enabled: ${OKF_LLM_SYNC_ENABLED:true}
       sync-on-startup: ${OKF_LLM_SYNC_ON_STARTUP:true}
       hf-token: ${HF_TOKEN:}
+    mcp:
+      enrichment-model: ${OKF_MCP_ENRICH_MODEL:gemma4:12b}
+      card-max-chars: ${OKF_MCP_CARD_MAX_CHARS:12000}
+      cache-ttl-hours: ${OKF_MCP_CACHE_TTL_HOURS:168}

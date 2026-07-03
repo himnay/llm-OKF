@@ -1,20 +1,25 @@
 package com.llm.okf.controller;
 
+import com.llm.okf.model.ChatRequest;
 import com.llm.okf.models.model.ModelSyncStatus;
 import com.llm.okf.models.service.HuggingFaceSyncService;
 import com.llm.okf.models.service.OkfQueryResolver;
+import com.llm.okf.service.LlmModelsChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +29,21 @@ public class LlmModelsController {
 
     private final HuggingFaceSyncService syncService;
     private final OkfQueryResolver queryResolver;
+    private final LlmModelsChatService catalogChatService;
+
+    /** Catalog-only chat — answers exclusively from the Hugging Face model catalog via tools, no wiki context. */
+    @PostMapping("/chat")
+    @Operation(summary = "Ask about LLM models — answers only from the Hugging Face catalog in MongoDB (tools-grounded)")
+    public Map<String, String> chat(@Valid @RequestBody ChatRequest request) {
+        return Map.of("answer", catalogChatService.chat(request));
+    }
+
+    /** Same catalog chat rendered as readable markdown — send {@code Accept: text/markdown}. */
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_MARKDOWN_VALUE)
+    @Operation(summary = "Ask about LLM models — markdown response (Accept: text/markdown)")
+    public String chatMarkdown(@Valid @RequestBody ChatRequest request) {
+        return catalogChatService.chat(request);
+    }
 
     /** Resolves a Pattern B query OKF file — executes its MongoDB query and returns markdown with live results inlined. */
     @GetMapping(value = "/resolve", produces = MediaType.TEXT_MARKDOWN_VALUE)

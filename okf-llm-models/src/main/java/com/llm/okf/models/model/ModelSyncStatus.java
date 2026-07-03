@@ -13,12 +13,14 @@ public record ModelSyncStatus(
         long durationMs,
         String error) {
 
+    /** Successful run — all counts populated, {@code error} is null. */
     public static ModelSyncStatus success(int fetched, int upserted, int materializedFiles, int queryFiles,
                                           Instant startedAt, Instant finishedAt) {
         return new ModelSyncStatus(fetched, upserted, materializedFiles, queryFiles,
                 startedAt, finishedAt, finishedAt.toEpochMilli() - startedAt.toEpochMilli(), null);
     }
 
+    /** Failed run — counts zeroed, {@code error} carries the cause message. */
     public static ModelSyncStatus failure(String error, Instant startedAt, Instant finishedAt) {
         return new ModelSyncStatus(0, 0, 0, 0,
                 startedAt, finishedAt, finishedAt.toEpochMilli() - startedAt.toEpochMilli(), error);

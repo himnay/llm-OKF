@@ -35,6 +35,17 @@ public class OkfController {
         return chatService.chat(request);
     }
 
+    /** Same chat pipeline, rendered as readable markdown — send {@code Accept: text/markdown} to get this instead of JSON. */
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_MARKDOWN_VALUE)
+    @Operation(summary = "Ask a question — same as /chat but returns readable markdown (Accept: text/markdown)")
+    public String chatMarkdown(@Valid @RequestBody ChatRequest request) {
+        ChatResponse response = chatService.chat(request);
+        return response.answer()
+                + "\n\n---\n_Sources (" + response.filesLoaded() + " file"
+                + (response.filesLoaded() == 1 ? "" : "s") + "): "
+                + String.join(", ", response.sourcesUsed()) + "_\n";
+    }
+
     /** Streaming OKF chat — same pipeline as {@code /chat} but emits tokens via Server-Sent Events. */
     @Operation(summary = "Stream answer token-by-token via Server-Sent Events")
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

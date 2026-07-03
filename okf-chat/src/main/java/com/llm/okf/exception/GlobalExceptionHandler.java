@@ -44,6 +44,18 @@ public class GlobalExceptionHandler {
         return ApiError.of(400, "Bad Request", ex.getMessage());
     }
 
+    /**
+     * LLM backend call failed or was interrupted mid-flight (ollama down, request cancelled,
+     * devtools restart) — reported as 503 without the full stack trace.
+     */
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    @ExceptionHandler(org.springframework.web.client.ResourceAccessException.class)
+    public ApiError handleLlmBackend(org.springframework.web.client.ResourceAccessException ex) {
+        log.warn("LLM backend call failed: {}", ex.getMessage());
+        return ApiError.of(503, "LLM Backend Unavailable",
+                "The model backend did not complete the request: " + ex.getMessage());
+    }
+
     /** Client disconnected before LLM finished — not an application error. */
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleClientDisconnect(AsyncRequestNotUsableException ex) {

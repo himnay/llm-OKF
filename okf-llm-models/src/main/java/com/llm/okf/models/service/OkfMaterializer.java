@@ -47,7 +47,8 @@ public class OkfMaterializer {
         return models.size();
     }
 
-    private String render(LlmModelDoc m) {
+    /** Renders one model document as a self-contained OKF markdown file (also reused by the MCP tools). */
+    public String render(LlmModelDoc m) {
         String params = m.paramsBillions() == null ? "unknown"
                 : (m.paramsBillions() < 1 ? Math.round(m.paramsBillions() * 1000) + "M" : trimZero(m.paramsBillions()) + "B");
         String localNote = Boolean.TRUE.equals(m.canRunLocally())

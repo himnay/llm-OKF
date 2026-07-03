@@ -56,7 +56,7 @@ class OkfQueryResolverTest {
     void setUp() {
         LlmModelsProperties properties = new LlmModelsProperties(
                 "/tmp/unused", queryDir.toString(), "https://huggingface.co/api/models",
-                50, 50, 86400000L, false, false, "");
+                50, 50, "downloads", 0, 0, 86400000L, false, false, "");
         resolver = new OkfQueryResolver(mongoTemplate, properties);
     }
 

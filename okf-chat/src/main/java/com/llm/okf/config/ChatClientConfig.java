@@ -1,6 +1,7 @@
 package com.llm.okf.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.llm.okf.mcp.service.LlmModelMcpTools;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -21,11 +22,17 @@ public class ChatClientConfig {
         return new ObjectMapper();
     }
 
-    /** Primary chat client — quality model for answering user questions. */
+    /**
+     * Primary chat client — quality model for answering user questions. Carries the OKF model
+     * tools so the LLM can search the knowledge base and enrich answers from the internet
+     * (the same tools are exposed to external agents via the MCP server endpoint).
+     */
     @Bean
     @Primary
-    ChatClient chatClient(ChatModel chatModel) {
-        return ChatClient.builder(chatModel).build();
+    ChatClient chatClient(ChatModel chatModel, LlmModelMcpTools okfModelTools) {
+        return ChatClient.builder(chatModel)
+                .defaultTools(okfModelTools)
+                .build();
     }
 
     /** Navigation client — fast small model, only selects relevant files from index. */

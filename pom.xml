@@ -20,6 +20,7 @@
     <modules>
         <module>okf-wiki</module>
         <module>okf-llm-models</module>
+        <module>okf-mcp</module>
         <module>okf-chat</module>
     </modules>
 

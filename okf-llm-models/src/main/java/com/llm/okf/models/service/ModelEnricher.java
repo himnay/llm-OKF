@@ -1,5 +1,6 @@
 package com.llm.okf.models.service;
 
+import com.llm.okf.models.model.GoodFor;
 import com.llm.okf.models.model.HfModel;
 import com.llm.okf.models.model.LlmModelDoc;
 import org.springframework.stereotype.Component;
@@ -35,35 +36,20 @@ public class ModelEnricher {
     private static final Set<String> EMBEDDING = Set.of(
             "feature-extraction", "sentence-similarity");
 
-    private static final Map<String, String> GOOD_FOR = Map.ofEntries(
-            Map.entry("text-generation", "Chat assistants, text generation, code generation, instruction following."),
-            Map.entry("text2text-generation", "Translation, summarization, and other text-to-text transformations."),
-            Map.entry("conversational", "Multi-turn dialogue and chat applications."),
-            Map.entry("automatic-speech-recognition", "Transcribing speech to text (voice notes, subtitles, call analytics)."),
-            Map.entry("text-to-speech", "Generating natural-sounding speech from text."),
-            Map.entry("text-to-audio", "Generating music or sound effects from text prompts."),
-            Map.entry("audio-classification", "Classifying sounds, speaker traits, or audio events."),
-            Map.entry("text-to-image", "Generating images from text prompts."),
-            Map.entry("image-to-text", "Image captioning and OCR-style description."),
-            Map.entry("image-text-to-text", "Multimodal chat — answering questions about images."),
-            Map.entry("visual-question-answering", "Answering questions about image content."),
-            Map.entry("image-classification", "Labeling images by category."),
-            Map.entry("object-detection", "Locating and labeling objects within images."),
-            Map.entry("feature-extraction", "Producing embeddings for search, RAG, and clustering."),
-            Map.entry("sentence-similarity", "Semantic search and sentence-level similarity scoring."),
-            Map.entry("fill-mask", "Masked-token prediction — base model for fine-tuning."),
-            Map.entry("token-classification", "Named-entity recognition and token tagging."),
-            Map.entry("text-classification", "Sentiment analysis and text categorization."),
-            Map.entry("translation", "Translating text between languages."),
-            Map.entry("summarization", "Condensing long documents into summaries."),
-            Map.entry("question-answering", "Extractive question answering over passages."),
-            Map.entry("zero-shot-classification", "Classifying text against arbitrary labels without training."));
-
     // Matches "8B", "70b", "0.5B", "135M", "1.1b" as a token inside the model name
     private static final Pattern PARAMS = Pattern.compile("(?<![0-9.])(\\d+(?:\\.\\d+)?)([bmBM])(?![a-zA-Z0-9])");
     // Mixture-of-experts naming: "8x7B" → 8 × 7 = 56B total
     private static final Pattern MOE_PARAMS = Pattern.compile("(\\d+)x(\\d+(?:\\.\\d+)?)[bB](?![a-zA-Z0-9])");
 
+    /**
+     * Converts a raw Hugging Face model entry into the enriched catalog document: splits
+     * author/name, parses parameter count from the name, derives size category, local-run
+     * feasibility, capability flags, and the "good for" description.
+     *
+     * @param hf       raw entry from the Hugging Face list API
+     * @param syncedAt timestamp recorded on the document for this sync run
+     * @return the MongoDB-ready catalog document
+     */
     public LlmModelDoc enrich(HfModel hf, Instant syncedAt) {
         String id = hf.id();
         int slash = id.indexOf('/');
@@ -87,8 +73,7 @@ public class ModelEnricher {
                 AUDIO.contains(pipeline),
                 VISION.contains(pipeline),
                 EMBEDDING.contains(pipeline),
-                GOOD_FOR.getOrDefault(pipeline,
-                        "General-purpose model — see the Hugging Face model card for details."),
+                GoodFor.fromPipelineTag(pipeline).description(),
                 hf.downloads(), hf.likes(), hf.createdAt(), hf.lastModified(), syncedAt);
     }
 
