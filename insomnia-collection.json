@@ -184,7 +184,7 @@
       "modified": 1783107801186,
       "created": 1783107801186,
       "name": "Catalog Chat \u2014 Ask About Models",
-      "description": "Tools-grounded chat over the HF catalog only \u2014 no wiki context",
+      "description": "Structured JSON contract: {answer, models[{id,modelType,paramsBillions,runsLocally,goodFor}]}",
       "method": "POST",
       "url": "{{ base_url }}/api/v1/okf/llm-models/chat",
       "parameters": [],
@@ -315,6 +315,33 @@
       "parameters": [],
       "headers": [],
       "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_llm_chat_stream",
+      "_type": "request",
+      "parentId": "fld_llm_models_catalog",
+      "modified": 1783114042089,
+      "created": 1783114042089,
+      "name": "Catalog Chat \u2014 Stream (SSE)",
+      "description": "Token-by-token markdown stream over the HF catalog \u2014 responsive on slow hardware",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/okf/llm-models/chat/stream",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "text/event-stream"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"question\": \"list the top 10 text-generation models that can run locally\"\n}"
+      },
       "authentication": {}
     }
   ]

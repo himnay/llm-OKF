@@ -31,18 +31,25 @@ public class LlmModelsController {
     private final OkfQueryResolver queryResolver;
     private final LlmModelsChatService catalogChatService;
 
-    /** Catalog-only chat — answers exclusively from the Hugging Face model catalog via tools, no wiki context. */
+    /** Catalog-only chat — structured JSON contract: {@code {answer, models[{id,modelType,paramsBillions,runsLocally,goodFor}]}}. */
     @PostMapping("/chat")
-    @Operation(summary = "Ask about LLM models — answers only from the Hugging Face catalog in MongoDB (tools-grounded)")
-    public Map<String, String> chat(@Valid @RequestBody ChatRequest request) {
-        return Map.of("answer", catalogChatService.chat(request));
+    @Operation(summary = "Ask about LLM models — structured JSON answer (summary + typed model rows) from the MongoDB catalog")
+    public com.llm.okf.model.CatalogChatResponse chat(@Valid @RequestBody ChatRequest request) {
+        return catalogChatService.chat(request);
     }
 
-    /** Same catalog chat rendered as readable markdown — send {@code Accept: text/markdown}. */
+    /** Same catalog chat rendered as readable markdown table — send {@code Accept: text/markdown}. */
     @PostMapping(value = "/chat", produces = MediaType.TEXT_MARKDOWN_VALUE)
-    @Operation(summary = "Ask about LLM models — markdown response (Accept: text/markdown)")
+    @Operation(summary = "Ask about LLM models — markdown table response (Accept: text/markdown)")
     public String chatMarkdown(@Valid @RequestBody ChatRequest request) {
-        return catalogChatService.chat(request);
+        return catalogChatService.toMarkdown(catalogChatService.chat(request));
+    }
+
+    /** Streaming catalog chat — markdown tokens via Server-Sent Events as the answer is generated. */
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream a catalog answer token-by-token via Server-Sent Events")
+    public reactor.core.publisher.Flux<String> chatStream(@Valid @RequestBody ChatRequest request) {
+        return catalogChatService.stream(request);
     }
 
     /** Resolves a Pattern B query OKF file — executes its MongoDB query and returns markdown with live results inlined. */
