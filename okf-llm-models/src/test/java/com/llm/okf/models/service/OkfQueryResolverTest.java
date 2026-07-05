@@ -3,6 +3,7 @@ package com.llm.okf.models.service;
 import com.llm.okf.models.config.LlmModelsProperties;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -61,6 +62,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Resolves a query .md file against MongoDB and renders the results as a markdown table")
     void resolvesQueryFileAndRendersResultsTable() throws IOException {
         Files.writeString(queryDir.resolve("local.md"), QUERY_FILE);
         when(mongoTemplate.find(any(BasicQuery.class), eq(Document.class), eq("llm_models")))
@@ -78,6 +80,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Rejects a query path that traverses outside the query directory")
     void rejectsPathTraversal() {
         assertThatThrownBy(() -> resolver.resolve("../../etc/passwd"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -85,6 +88,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Rejects a query filename that does not exist in the query directory")
     void rejectsMissingFile() {
         assertThatThrownBy(() -> resolver.resolve("nope.md"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -92,6 +96,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Rejects an OKF file whose frontmatter type is not 'query'")
     void rejectsNonQueryOkfFile() throws IOException {
         Files.writeString(queryDir.resolve("ref.md"), """
                 ---
@@ -106,6 +111,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Rejects a MongoDB filter containing forbidden server-side operators like $where")
     void rejectsServerSideCodeOperators() throws IOException {
         Files.writeString(queryDir.resolve("evil.md"), QUERY_FILE.replace(
                 "'{ \"canRunLocally\": true }'",
@@ -116,6 +122,7 @@ class OkfQueryResolverTest {
     }
 
     @Test
+    @DisplayName("Rejects a query targeting a collection that is not on the allowed list")
     void rejectsUnknownCollection() throws IOException {
         Files.writeString(queryDir.resolve("other.md"), QUERY_FILE.replace(
                 "collection: llm_models", "collection: system.users"));

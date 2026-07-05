@@ -2,6 +2,7 @@ package com.llm.okf.models.service;
 
 import com.llm.okf.models.model.HfModel;
 import com.llm.okf.models.model.LlmModelDoc;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -14,6 +15,7 @@ class ModelEnricherTest {
     private final ModelEnricher enricher = new ModelEnricher();
 
     @Test
+    @DisplayName("Parses parameter counts in billions from common model name patterns")
     void parsesParamsFromCommonNamePatterns() {
         assertThat(ModelEnricher.parseParamsBillions("Llama-3.1-8B-Instruct")).isEqualTo(8.0);
         assertThat(ModelEnricher.parseParamsBillions("Qwen2.5-72B")).isEqualTo(72.0);
@@ -22,11 +24,13 @@ class ModelEnricherTest {
     }
 
     @Test
+    @DisplayName("Parses a mixture-of-experts name pattern (NxM) as the total parameter count")
     void parsesMixtureOfExpertsAsTotalParams() {
         assertThat(ModelEnricher.parseParamsBillions("Mixtral-8x7B-Instruct-v0.1")).isEqualTo(56.0);
     }
 
     @Test
+    @DisplayName("Returns null when the model name contains no parameter size information")
     void returnsNullWhenNameCarriesNoSize() {
         assertThat(ModelEnricher.parseParamsBillions("gpt2")).isNull();
         assertThat(ModelEnricher.parseParamsBillions("bert-base-uncased")).isNull();
@@ -34,6 +38,7 @@ class ModelEnricherTest {
     }
 
     @Test
+    @DisplayName("Classifies parameter counts into size categories across unknown/small/medium/large/xl boundaries")
     void sizeCategoryBoundaries() {
         assertThat(ModelEnricher.sizeCategory(null)).isEqualTo("unknown");
         assertThat(ModelEnricher.sizeCategory(0.5)).isEqualTo("small");
@@ -43,6 +48,7 @@ class ModelEnricherTest {
     }
 
     @Test
+    @DisplayName("Determines whether a model can run locally based on size and GGUF packaging tag")
     void localRunHeuristics() {
         assertThat(ModelEnricher.canRunLocally(8.0, false)).isTrue();
         assertThat(ModelEnricher.canRunLocally(70.0, false)).isFalse();
@@ -51,6 +57,7 @@ class ModelEnricherTest {
     }
 
     @Test
+    @DisplayName("Enriches an HF model into a LlmModelDoc, deriving capabilities from its pipeline tag")
     void enrichDerivesCapabilitiesFromPipelineTag() {
         HfModel hf = new HfModel("meta-llama/Llama-3.1-8B-Instruct", "text-generation",
                 "transformers", List.of("license:llama3.1", "text-generation-inference"),
@@ -70,6 +77,7 @@ class ModelEnricherTest {
     }
 
     @Test
+    @DisplayName("Flags audio and embedding models based on their speech-recognition or sentence-similarity pipeline")
     void enrichFlagsAudioAndEmbeddingPipelines() {
         HfModel whisper = new HfModel("openai/whisper-large-v3", "automatic-speech-recognition",
                 "transformers", List.of(), 1L, 1L, null, null);

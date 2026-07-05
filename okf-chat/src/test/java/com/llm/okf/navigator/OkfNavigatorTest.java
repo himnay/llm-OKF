@@ -5,6 +5,7 @@ import com.llm.okf.config.OkfProperties;
 import com.llm.okf.event.IndexSyncedEvent;
 import com.llm.okf.model.OkfFile;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.client.ChatClient;
@@ -58,6 +59,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Returns the cached index value from Redis without reading the index file from disk")
     void readIndexFileReturnsCachedValueWithoutTouchingDisk() {
         when(valueOps.get("okf:index")).thenReturn("cached index");
 
@@ -65,6 +67,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("On a cache miss, loads the index from disk and writes it back into the Redis cache")
     void readIndexFileLoadsFromDiskAndCachesOnMiss() throws Exception {
         when(valueOps.get("okf:index")).thenReturn(null);
         writeFile("index.md", "# Index\n- doc-a.md");
@@ -74,6 +77,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Does not write to the cache when the index file is missing from disk")
     void readIndexFileDoesNotCacheMissingIndex() {
         when(valueOps.get("okf:index")).thenReturn(null);
 
@@ -82,6 +86,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Handling an IndexSyncedEvent evicts the cached index from Redis")
     void indexSyncedEventEvictsCache() {
         navigator.onIndexSynced(new IndexSyncedEvent(this));
 
@@ -89,11 +94,13 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Returns an empty list when the index content is blank")
     void findRelevantFilesReturnsEmptyWhenIndexBlank() {
         assertThat(navigator.findRelevantFiles("query", "")).isEmpty();
     }
 
     @Test
+    @DisplayName("Extracts a JSON array of file paths from a free-text LLM response")
     void findRelevantFilesParsesJsonArrayFromLlmResponse() {
         when(chatClient.prompt().user(anyString()).call().content())
                 .thenReturn("Here you go: [\"docs/auth.md\", \"docs/api.md\"]");
@@ -104,6 +111,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Returns an empty list when the LLM response contains no parseable JSON array")
     void findRelevantFilesReturnsEmptyOnMalformedLlmResponse() {
         when(chatClient.prompt().user(anyString()).call().content())
                 .thenReturn("I could not find anything relevant.");
@@ -112,6 +120,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Parses YAML frontmatter fields and separates them from the markdown body")
     void loadFilesParsesFrontmatterAndBody() throws Exception {
         writeFile("doc-a.md", """
                 ---
@@ -134,6 +143,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Falls back to the filename as title and 'unknown' type when frontmatter is absent")
     void loadFilesWithoutFrontmatterUsesDefaults() throws Exception {
         writeFile("plain.md", "Just a body, no frontmatter.");
 
@@ -145,6 +155,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Recovers gracefully from malformed YAML frontmatter, still returning the body content")
     void loadFilesWithBrokenFrontmatterFallsBackGracefully() throws Exception {
         writeFile("broken.md", "---\n:{bad yaml\n---\nBody survives.");
 
@@ -155,6 +166,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Returns an empty body instead of throwing when a requested file does not exist")
     void missingFileYieldsEmptyBodyInsteadOfThrowing() {
         OkfFile file = navigator.loadFiles(List.of("does-not-exist.md")).getFirst();
 
@@ -162,6 +174,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Lists knowledge base files while excluding the index file and dotfiles")
     void listAllFilesExcludesIndexAndDotfiles() throws Exception {
         writeFile("index.md", "# Index");
         writeFile(".hidden.md", "secret");
@@ -174,6 +187,7 @@ class OkfNavigatorTest {
     }
 
     @Test
+    @DisplayName("Returns an empty list when the knowledge base directory does not exist")
     void listAllFilesReturnsEmptyWhenBaseDirMissing() {
         OkfProperties properties = new OkfProperties(
                 knowledgeBase.resolve("nope").toString(), 3, "m", "m", null);
