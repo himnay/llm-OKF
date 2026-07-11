@@ -1,5 +1,27 @@
 # llm-OKF — Open Knowledge Format
 
+<img src="image/spring-logo.png" alt="logo" width="80"/>
+
+## Table of contents
+
+1. [What is OKF?](#what-is-okf)
+2. [Key Points](#key-points)
+3. [Why OKF Instead of RAG?](#why-okf-instead-of-rag)
+4. [How It Works — Step by Step](#how-it-works--step-by-step)
+5. [concepts/](#concepts)
+6. [docs/](#docs)
+7. [Multi-Module Architecture](#multi-module-architecture)
+8. [Prompt Templates](#prompt-templates)
+9. [Database Schema](#database-schema)
+10. [Prerequisites](#prerequisites)
+11. [Running the Application](#running-the-application)
+12. [Development](#development)
+13. [Configuration Reference](#configuration-reference)
+14. [API Endpoints](#api-endpoints)
+15. [Knowledge Base on Disk](#knowledge-base-on-disk)
+16. [Implementation Notes](#implementation-notes)
+17. [References](#references)
+
 A **Spring Boot + Spring AI** application that turns any GitHub repository into a queryable knowledge base — without a vector database, without embeddings, and without chunking.
 
 Knowledge is synced from GitHub, converted to structured markdown files using a local Ollama LLM, and stored on disk. When you ask a question, an LLM agent reads a lightweight index to find the right files, then loads those full files and answers from their complete content.
