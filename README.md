@@ -69,19 +69,27 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 
 **RAG (Retrieval-Augmented Generation)** is the common approach: embed documents as vectors, store them in a vector database, and retrieve the nearest chunks when a query comes in. RAG has significant downsides:
 
+<ul>
+
 - You need an **embedding model** running separately
 - You need a **vector database** (Pinecone, Weaviate, pgvector, etc.)
 - Documents are **chunked** into 500-token pieces — context is lost at chunk boundaries
 - When a document changes, you must **re-embed** it
 - Infrastructure is **complex** to set up and expensive to operate
 
+</ul>
+
 **OKF is different:**
+
+<ul>
 
 - **No embedding model** — just your local Ollama instance
 - **No vector database** — knowledge lives as plain files on disk
 - **No chunking** — whole files are loaded and passed to the LLM
 - **Auto-synced** — changes in GitHub are pulled hourly, no re-embedding needed
 - **Human-readable** — you can open and edit any knowledge file in a text editor
+
+</ul>
 
 The trade-off is that OKF relies on the LLM's ability to reason over the index and select relevant files — it works best when files have clear, descriptive `description` frontmatter and when the repository contains conceptual knowledge (not millions of tiny files).
 
@@ -112,17 +120,25 @@ The GitHub API endpoint `GET /repos/{owner}/{repo}/git/trees/HEAD?recursive=1` r
 
 Build and tooling files are excluded because they carry no reusable knowledge:
 
+<ul>
+
 - Filenames like `pom.xml`, `Dockerfile`, `package.json`, `.gitignore`, `Makefile`, `gradlew`
 - Directories like `src/test/`, `.github/`, `node_modules/`, `.idea/`, `.vscode/`
 - Binary files: images, archives, compiled artifacts, fonts, audio/video
+
+</ul>
 
 **Step 3 — Download and convert each changed file**
 
 For every file whose SHA has changed (or that is new), the raw content is fetched from `raw.githubusercontent.com`. Then an OKF document is generated:
 
+<ul>
+
 - **For code files** (`.java`, `.py`, `.go`, etc.) — the Ollama LLM reads the code and writes a plain-language knowledge document explaining the concept, pattern, or idea in the file. The raw source code is appended at the bottom for reference. The goal is to capture *what* the code teaches, not just *what* the code does.
 - **For markdown files** (`.md`) — the LLM generates YAML frontmatter (`title`, `description`, `type`, `tags`) and prepends it to the file. The original markdown body is preserved exactly as written.
 - **Fallback** — if the LLM call fails or produces invalid output, the file is wrapped in minimal OKF frontmatter automatically without LLM involvement. The sync never fails because of a single file.
+
+</ul>
 
 **Step 4 — Persist the SHA immediately**
 
@@ -314,10 +330,14 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 <a id="prerequisites"></a>
 ## 10. 🔹 Prerequisites
 
+<ul>
+
 - Java 21 or higher
 - Maven 3.9 or higher
 - PostgreSQL database (local or Docker)
 - Ollama running locally with at least one model pulled
+
+</ul>
 
 ```bash
 # Pull the default chat/navigation model
@@ -532,9 +552,13 @@ Response:
 ```
 
 Possible status values:
+<ul>
+
 - `SUCCESS` — all files processed without errors
 - `PARTIAL` — some files failed (listed in `errors`), others succeeded
 - `FAILED` — the sync failed before processing any files (e.g., GitHub API unreachable)
+
+</ul>
 
 ### Get Last Sync Status
 
@@ -623,12 +647,16 @@ All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/proj
 
 Key points about how files are stored:
 
+<ul>
+
 - **Code files** get `.md` appended — `Singleton.java` on GitHub becomes `Singleton.java.md` in the knowledge base
 - **Markdown files** keep their original extension — `README.md` stays `README.md`
 - The **directory structure mirrors GitHub** exactly
 - Files **deleted from GitHub** are deleted from disk on the next sync
 - `index.md` is always **regenerated fresh** and is never synced from GitHub
 - The knowledge base directory is plain files — you can browse it with any text editor, search it with `grep`, or version it with git
+
+</ul>
 
 ---
 
@@ -656,8 +684,12 @@ The sync loop now increments `skipped` **inline** when a file is unchanged (matc
 <a id="references"></a>
 ## 17. 📚 References
 
+<ul>
+
 - OKF concept: https://www.mariehaynes.com/build-an-okf-brain-like-mine/
 - Spring AI docs: https://docs.spring.io/spring-ai/reference/
 - Ollama: https://ollama.com/
 - ShedLock: https://github.com/lukas-krecan/ShedLock
 - Spec: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+
+</ul>
