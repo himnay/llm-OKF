@@ -28,7 +28,8 @@ Knowledge is synced from GitHub, converted to structured markdown files using a 
 
 ---
 
-## What is OKF?
+<a id="what-is-okf"></a>
+## 1. 💡 What is OKF?
 
 **OKF (Open Knowledge Format)** is a structured way to store knowledge as plain markdown files with YAML frontmatter. Each file is a self-contained knowledge document that describes one concept, pattern, or topic. The files are stored on disk — no database, no embeddings.
 
@@ -50,7 +51,8 @@ The Singleton pattern ensures that a class has only one instance throughout the 
 of an application. It is commonly used for shared resources like database connections or
 configuration managers.
 
-## Key Points
+<a id="key-points"></a>
+## 2. 🔹 Key Points
 - Constructor is private so no external code can call `new`
 - A static field holds the single instance
 - Thread safety requires either `synchronized` or eager initialization
@@ -62,7 +64,8 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 
 ---
 
-## Why OKF Instead of RAG?
+<a id="why-okf-instead-of-rag"></a>
+## 3. 🤖 Why OKF Instead of RAG?
 
 **RAG (Retrieval-Augmented Generation)** is the common approach: embed documents as vectors, store them in a vector database, and retrieve the nearest chunks when a query comes in. RAG has significant downsides:
 
@@ -94,7 +97,8 @@ The trade-off is that OKF relies on the LLM's ability to reason over the index a
 
 ---
 
-## How It Works — Step by Step
+<a id="how-it-works--step-by-step"></a>
+## 4. 🔹 How It Works — Step by Step
 
 ### Phase 1: GitHub Sync
 
@@ -136,12 +140,14 @@ After all files are processed, `OkfIndexGenerator` walks the knowledge base dire
 # OKF Knowledge Base Index
 Source: https://github.com/owner/repo
 
-## concepts/
+<a id="concepts"></a>
+## 5. 💡 concepts/
 
 * [Singleton Design Pattern](concepts/singleton-pattern.md) - How to implement the Singleton pattern in Java
 * [Observer Pattern](concepts/observer-pattern.md) - How the Observer pattern decouples producers from consumers
 
-## docs/
+<a id="docs"></a>
+## 6. 📚 docs/
 
 * [Architecture Overview](docs/architecture.md) - Overview of the system architecture and module responsibilities
 ```
@@ -178,7 +184,8 @@ The navigation prompt limits the response to at most `maxFilesPerQuery` files (d
 
 ---
 
-## Multi-Module Architecture
+<a id="multi-module-architecture"></a>
+## 7. 🏗️ Multi-Module Architecture
 
 The project is structured as a **multi-module Maven project**. Each data source has its own module, making it easy to add new knowledge sources (Confluence, Notion, JIRA, local files, S3) without modifying existing code.
 
@@ -253,7 +260,8 @@ The navigator and chat service do not need to change at all — they read from `
 
 ---
 
-## Prompt Templates
+<a id="prompt-templates"></a>
+## 8. 🤖 Prompt Templates
 
 All LLM prompts are stored as **Spring AI StringTemplate (`.st`) files** under `okf-chat/src/main/resources/prompts/`. Variables use `{variableName}` syntax and are injected at runtime via `PromptTemplate.render(Map.of(...))`. `PromptTemplate` instances are constructed once at startup and reused across requests.
 
@@ -268,7 +276,8 @@ To change how the LLM selects files, how it answers questions, or how it generat
 
 ---
 
-## Database Schema
+<a id="database-schema"></a>
+## 9. 🗄️ Database Schema
 
 Two tables are created automatically by **Flyway** on startup. You do not need to create them manually.
 
@@ -302,7 +311,8 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 
 ---
 
-## Prerequisites
+<a id="prerequisites"></a>
+## 10. 🔹 Prerequisites
 
 - Java 21 or higher
 - Maven 3.9 or higher
@@ -327,7 +337,8 @@ docker run -d --name okf-postgres \
 
 ---
 
-## Running the Application
+<a id="running-the-application"></a>
+## 11. 🚀 Running the Application
 
 Build and run the `okf-chat` module from the project root:
 
@@ -359,7 +370,8 @@ Subsequent syncs run automatically every hour.
 
 ---
 
-## Development
+<a id="development"></a>
+## 12. 🔹 Development
 
 ### Hot Reload with Spring DevTools
 
@@ -381,7 +393,8 @@ The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the 
 
 ---
 
-## Configuration Reference
+<a id="configuration-reference"></a>
+## 13. 📚 Configuration Reference
 
 All settings have sensible defaults. The only required variable is `GITHUB_REPO_URL`.
 
@@ -437,7 +450,8 @@ Using separate models lets you balance speed and quality: navigation runs on a f
 
 ---
 
-## API Endpoints
+<a id="api-endpoints"></a>
+## 14. 🌐 API Endpoints
 
 ### Ask a Question
 
@@ -587,7 +601,8 @@ GET /api-docs             # OpenAPI JSON specification
 
 ---
 
-## Knowledge Base on Disk
+<a id="knowledge-base-on-disk"></a>
+## 15. 🔹 Knowledge Base on Disk
 
 All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/projects/okf/wiki`):
 
@@ -617,7 +632,8 @@ Key points about how files are stored:
 
 ---
 
-## Implementation Notes
+<a id="implementation-notes"></a>
+## 16. 🔹 Implementation Notes
 
 ### Frontmatter Parsing
 
@@ -637,7 +653,8 @@ The sync loop now increments `skipped` **inline** when a file is unchanged (matc
 
 ---
 
-## References
+<a id="references"></a>
+## 17. 📚 References
 
 - OKF concept: https://www.mariehaynes.com/build-an-okf-brain-like-mine/
 - Spring AI docs: https://docs.spring.io/spring-ai/reference/
