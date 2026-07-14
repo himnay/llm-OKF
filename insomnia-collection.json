@@ -1,348 +1,239 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-06-29T00:00:00.000Z",
-  "__export_source": "llm-okf",
+  "__export_date": "2026-07-14T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v12.0.0",
   "resources": [
     {
-      "_id": "wrk_llm_okf",
+      "_id": "wrk_llmOKF_0000000000000000000000000001",
       "_type": "workspace",
-      "name": "LLM OKF \u2014 GitHub-Synced Knowledge Base",
-      "description": "OKF as a RAG replacement: structured markdown synced from GitHub, deterministic navigation, no vector DB",
-      "scope": "collection"
+      "parentId": null,
+      "name": "llm-OKF :: REST",
+      "scope": "collection",
+      "created": 1784063187842,
+      "modified": 1784063187842
     },
     {
-      "_id": "env_base",
+      "_id": "env_llmOKF_0000000000000000000000000002",
       "_type": "environment",
-      "parentId": "wrk_llm_okf",
+      "parentId": "wrk_llmOKF_0000000000000000000000000001",
       "name": "Base Environment",
       "data": {
-        "base_url": "http://localhost:8090"
-      }
-    },
-    {
-      "_id": "fld_chat",
-      "_type": "request_group",
-      "parentId": "wrk_llm_okf",
-      "name": "OKF Chat",
-      "description": "Query the OKF knowledge base synced from GitHub"
-    },
-    {
-      "_id": "fld_knowledge",
-      "_type": "request_group",
-      "parentId": "wrk_llm_okf",
-      "name": "Knowledge Base",
-      "description": "Inspect the synced OKF knowledge base"
-    },
-    {
-      "_id": "fld_sync",
-      "_type": "request_group",
-      "parentId": "wrk_llm_okf",
-      "name": "GitHub Sync",
-      "description": "Trigger and monitor GitHub repository sync"
-    },
-    {
-      "_id": "req_chat",
-      "_type": "request",
-      "parentId": "fld_chat",
-      "name": "Chat \u2014 Ask a Question",
-      "description": "Ask anything. Navigator reads index, selects relevant files from GitHub-synced KB, LLM answers with full context.",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/chat",
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What topics are covered in this knowledge base?\"\n}"
-      }
-    },
-    {
-      "_id": "req_chat_2",
-      "_type": "request",
-      "parentId": "fld_chat",
-      "name": "Chat \u2014 Sample Query",
-      "description": "Example query targeting content from the synced GitHub repo",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/chat",
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What Java concepts or patterns are covered in the learning repo?\"\n}"
-      }
-    },
-    {
-      "_id": "req_stream",
-      "_type": "request",
-      "parentId": "fld_chat",
-      "name": "Chat \u2014 Stream (SSE)",
-      "description": "Same as chat but streams tokens via Server-Sent Events",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/chat/stream",
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "name": "Accept",
-          "value": "text/event-stream"
-        }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"question\": \"Summarize the key learning topics in this repository\"\n}"
-      }
-    },
-    {
-      "_id": "req_index",
-      "_type": "request",
-      "parentId": "fld_knowledge",
-      "name": "Get OKF Index",
-      "description": "Returns the auto-generated index.md \u2014 the navigation file listing all synced knowledge files",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/index",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "req_files",
-      "_type": "request",
-      "parentId": "fld_knowledge",
-      "name": "List All OKF Files",
-      "description": "Returns all synced OKF markdown files with parsed frontmatter metadata",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/files",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "req_sync_trigger",
-      "_type": "request",
-      "parentId": "fld_sync",
-      "name": "Trigger Manual Sync",
-      "description": "Fetches latest files from github.com/himnay/learning, creates OKF markdown for each, regenerates index. Returns sync result.",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/sync",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "req_sync_status",
-      "_type": "request",
-      "parentId": "fld_sync",
-      "name": "Sync Status",
-      "description": "Returns the last sync result: status, timestamp, file counts, and any errors",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/sync/status",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "req_health",
-      "_type": "request",
-      "parentId": "wrk_llm_okf",
-      "name": "Health Check",
-      "description": "Spring Boot Actuator health endpoint",
-      "method": "GET",
-      "url": "{{ base_url }}/actuator/health",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "req_swagger",
-      "_type": "request",
-      "parentId": "wrk_llm_okf",
-      "name": "Swagger UI",
-      "description": "Open Swagger UI in browser at http://localhost:8090/swagger-ui.html",
-      "method": "GET",
-      "url": "{{ base_url }}/swagger-ui.html",
-      "headers": [],
-      "body": {}
-    },
-    {
-      "_id": "fld_llm_models_catalog",
-      "_type": "request_group",
-      "parentId": "wrk_llm_okf",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "LLM Model Catalog",
-      "description": "Hugging Face model catalog \u2014 MongoDB-backed OKF (okf-llm-models + okf-mcp)"
-    },
-    {
-      "_id": "req_llm_chat",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Catalog Chat \u2014 Ask About Models",
-      "description": "Structured JSON contract: {answer, models[{id,modelType,paramsBillions,runsLocally,goodFor}]}",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/chat",
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n\t\"question\": \"list the top 10 text-generation models that can run locally\"\n}"
+        "host": "localhost"
       },
-      "authentication": {}
+      "created": 1784063187842,
+      "modified": 1784063187842
     },
     {
-      "_id": "req_llm_chat_md",
+      "_id": "fld_llmOKF_0000000000000000000000000003",
+      "_type": "request_group",
+      "parentId": "wrk_llmOKF_0000000000000000000000000001",
+      "name": "okf-chat (:8090)",
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000004",
       "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Catalog Chat \u2014 Markdown Response",
-      "description": "Same endpoint, Accept: text/markdown returns readable markdown",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/chat",
-      "parameters": [],
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "GET /api/v1/okf/files",
+      "method": "GET",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/files",
       "headers": [
         {
           "name": "Content-Type",
           "value": "application/json"
-        },
-        {
-          "name": "Accept",
-          "value": "text/markdown"
         }
       ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n\t\"question\": \"which whisper models are in the catalog?\"\n}"
-      },
-      "authentication": {}
+      "metaSortKey": 0,
+      "created": 1784063187842,
+      "modified": 1784063187842
     },
     {
-      "_id": "req_llm_resolve_top",
+      "_id": "req_llmOKF_0000000000000000000000000005",
       "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Resolve Live View \u2014 Top Downloaded",
-      "description": "Pattern B: executes the MongoDB query in the OKF file, instant, no LLM",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "GET /api/v1/okf/index",
       "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=top-downloaded.md",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_llm_resolve_local",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Resolve Live View \u2014 Local Runnable",
-      "description": "",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=all-local-runnable.md",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_llm_resolve_textgen",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Resolve Live View \u2014 Text Generation",
-      "description": "",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/resolve?file=text-generation-models.md",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_llm_sync",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Trigger Catalog Sync",
-      "description": "HF \u2192 MongoDB \u2192 regenerate OKF files (10k models, ~40s)",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/sync",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_llm_sync_status",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "Catalog Sync Status",
-      "description": "",
-      "method": "GET",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/sync/status",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_mcp_sse",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783107801186,
-      "created": 1783107801186,
-      "name": "MCP Server \u2014 SSE Handshake",
-      "description": "MCP endpoint for external agents; tools: searchModels, getModelKnowledge, enrichModelDetails",
-      "method": "GET",
-      "url": "{{ base_url }}/sse",
-      "parameters": [],
-      "headers": [],
-      "body": {},
-      "authentication": {}
-    },
-    {
-      "_id": "req_llm_chat_stream",
-      "_type": "request",
-      "parentId": "fld_llm_models_catalog",
-      "modified": 1783114042089,
-      "created": 1783114042089,
-      "name": "Catalog Chat \u2014 Stream (SSE)",
-      "description": "Token-by-token markdown stream over the HF catalog \u2014 responsive on slow hardware",
-      "method": "POST",
-      "url": "{{ base_url }}/api/v1/okf/llm-models/chat/stream",
-      "parameters": [],
+      "url": "http://{{ _.host }}:8090/api/v1/okf/index",
       "headers": [
         {
           "name": "Content-Type",
           "value": "application/json"
-        },
-        {
-          "name": "Accept",
-          "value": "text/event-stream"
         }
       ],
+      "metaSortKey": 100,
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000006",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "GET /api/v1/okf/llm-models/resolve",
+      "method": "GET",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/llm-models/resolve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 200,
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000007",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "GET /api/v1/okf/llm-models/sync/status",
+      "method": "GET",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/llm-models/sync/status",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 300,
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000008",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "GET /api/v1/okf/sync/status",
+      "method": "GET",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/sync/status",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 400,
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000009",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/chat",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/chat",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 500,
+      "created": 1784063187842,
+      "modified": 1784063187842,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n\t\"question\": \"list the top 10 text-generation models that can run locally\"\n}"
-      },
-      "authentication": {}
+        "text": "{\n  \n}"
+      }
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000010",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/chat/stream",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/chat/stream",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 600,
+      "created": 1784063187842,
+      "modified": 1784063187842,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \n}"
+      }
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000011",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/llm-models/chat",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/llm-models/chat",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 700,
+      "created": 1784063187842,
+      "modified": 1784063187842,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \n}"
+      }
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000012",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/llm-models/chat/stream",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/llm-models/chat/stream",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 800,
+      "created": 1784063187842,
+      "modified": 1784063187842,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \n}"
+      }
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000013",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/llm-models/sync",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/llm-models/sync",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 900,
+      "created": 1784063187842,
+      "modified": 1784063187842
+    },
+    {
+      "_id": "req_llmOKF_0000000000000000000000000014",
+      "_type": "request",
+      "parentId": "fld_llmOKF_0000000000000000000000000003",
+      "name": "POST /api/v1/okf/sync",
+      "method": "POST",
+      "url": "http://{{ _.host }}:8090/api/v1/okf/sync",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 1000,
+      "created": 1784063187842,
+      "modified": 1784063187842
     }
   ]
 }
