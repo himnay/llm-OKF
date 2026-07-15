@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:19beta1  # -alpine variant of 19beta1 is broken (missing postgres user)
     container_name: okf-postgres
     environment:
       POSTGRES_DB: okf
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - okf_pgdata:/var/lib/postgresql/data
+      - okf_pgdata:/var/lib/postgresql   # PG18+: mount the parent dir (versioned subdir layout)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U okf -d okf"]
       interval: 10s
