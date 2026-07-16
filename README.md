@@ -5,22 +5,19 @@
 ## Table of contents
 
 1. 💡 [What is OKF?](#what-is-okf)
-2. 🔹 [Key Points](#key-points)
-3. 🤖 [Why OKF Instead of RAG?](#why-okf-instead-of-rag)
-4. 🔹 [How It Works — Step by Step](#how-it-works--step-by-step)
-5. 💡 [concepts/](#concepts)
-6. 📚 [docs/](#docs)
-7. 🏗️ [Multi-Module Architecture](#multi-module-architecture)
-8. 🤖 [Prompt Templates](#prompt-templates)
-9. 🗄️ [Database Schema](#database-schema)
-10. 🔹 [Prerequisites](#prerequisites)
-11. 🚀 [Running the Application](#running-the-application)
-12. 🔹 [Development](#development)
-13. 📚 [Configuration Reference](#configuration-reference)
-14. 🌐 [API Endpoints](#api-endpoints)
-15. 🔹 [Knowledge Base on Disk](#knowledge-base-on-disk)
-16. 🔹 [Implementation Notes](#implementation-notes)
-17. 📚 [References](#references)
+2. 🤖 [Why OKF Instead of RAG?](#why-okf-instead-of-rag)
+3. 🔹 [How It Works — Step by Step](#how-it-works--step-by-step)
+4. 🏗️ [Multi-Module Architecture](#multi-module-architecture)
+5. 🤖 [Prompt Templates](#prompt-templates)
+6. 🗄️ [Database Schema](#database-schema)
+7. 🔹 [Prerequisites](#prerequisites)
+8. 🚀 [Running the Application](#running-the-application)
+9. 🔹 [Development](#development)
+10. 📚 [Configuration Reference](#configuration-reference)
+11. 🌐 [API Endpoints](#api-endpoints)
+12. 🔹 [Knowledge Base on Disk](#knowledge-base-on-disk)
+13. 🔹 [Implementation Notes](#implementation-notes)
+14. 📚 [References](#references)
 
 A **Spring Boot + Spring AI** application that turns any GitHub repository into a queryable knowledge base — without a vector database, without embeddings, and without chunking.
 
@@ -51,8 +48,7 @@ The Singleton pattern ensures that a class has only one instance throughout the 
 of an application. It is commonly used for shared resources like database connections or
 configuration managers.
 
-<a id="key-points"></a>
-## 2. 🔹 Key Points
+## Key Points
 - Constructor is private so no external code can call `new`
 - A static field holds the single instance
 - Thread safety requires either `synchronized` or eager initialization
@@ -65,7 +61,7 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 ---
 
 <a id="why-okf-instead-of-rag"></a>
-## 3. 🤖 Why OKF Instead of RAG?
+## 2. 🤖 Why OKF Instead of RAG?
 
 **RAG (Retrieval-Augmented Generation)** is the common approach: embed documents as vectors, store them in a vector database, and retrieve the nearest chunks when a query comes in. RAG has significant downsides:
 
@@ -106,7 +102,7 @@ The trade-off is that OKF relies on the LLM's ability to reason over the index a
 ---
 
 <a id="how-it-works--step-by-step"></a>
-## 4. 🔹 How It Works — Step by Step
+## 3. 🔹 How It Works — Step by Step
 
 ### Phase 1: GitHub Sync
 
@@ -156,14 +152,12 @@ After all files are processed, `OkfIndexGenerator` walks the knowledge base dire
 # OKF Knowledge Base Index
 Source: https://github.com/owner/repo
 
-<a id="concepts"></a>
-## 5. 💡 concepts/
+## concepts/
 
 * [Singleton Design Pattern](concepts/singleton-pattern.md) - How to implement the Singleton pattern in Java
 * [Observer Pattern](concepts/observer-pattern.md) - How the Observer pattern decouples producers from consumers
 
-<a id="docs"></a>
-## 6. 📚 docs/
+## docs/
 
 * [Architecture Overview](docs/architecture.md) - Overview of the system architecture and module responsibilities
 ```
@@ -201,7 +195,7 @@ The navigation prompt limits the response to at most `maxFilesPerQuery` files (d
 ---
 
 <a id="multi-module-architecture"></a>
-## 7. 🏗️ Multi-Module Architecture
+## 4. 🏗️ Multi-Module Architecture
 
 The project is structured as a **multi-module Maven project**. Each data source has its own module, making it easy to add new knowledge sources (Confluence, Notion, JIRA, local files, S3) without modifying existing code.
 
@@ -277,7 +271,7 @@ The navigator and chat service do not need to change at all — they read from `
 ---
 
 <a id="prompt-templates"></a>
-## 8. 🤖 Prompt Templates
+## 5. 🤖 Prompt Templates
 
 All LLM prompts are stored as **Spring AI StringTemplate (`.st`) files** under `okf-chat/src/main/resources/prompts/`. Variables use `{variableName}` syntax and are injected at runtime via `PromptTemplate.render(Map.of(...))`. `PromptTemplate` instances are constructed once at startup and reused across requests.
 
@@ -293,7 +287,7 @@ To change how the LLM selects files, how it answers questions, or how it generat
 ---
 
 <a id="database-schema"></a>
-## 9. 🗄️ Database Schema
+## 6. 🗄️ Database Schema
 
 Two tables are created automatically by **Flyway** on startup. You do not need to create them manually.
 
@@ -328,7 +322,7 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 ---
 
 <a id="prerequisites"></a>
-## 10. 🔹 Prerequisites
+## 7. 🔹 Prerequisites
 
 <ul>
 
@@ -358,7 +352,7 @@ docker run -d --name okf-postgres \
 ---
 
 <a id="running-the-application"></a>
-## 11. 🚀 Running the Application
+## 8. 🚀 Running the Application
 
 Build and run the `okf-chat` module from the project root:
 
@@ -391,7 +385,7 @@ Subsequent syncs run automatically every hour.
 ---
 
 <a id="development"></a>
-## 12. 🔹 Development
+## 9. 🔹 Development
 
 ### Hot Reload with Spring DevTools
 
@@ -414,7 +408,7 @@ The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the 
 ---
 
 <a id="configuration-reference"></a>
-## 13. 📚 Configuration Reference
+## 10. 📚 Configuration Reference
 
 All settings have sensible defaults. The only required variable is `GITHUB_REPO_URL`.
 
@@ -471,7 +465,7 @@ Using separate models lets you balance speed and quality: navigation runs on a f
 ---
 
 <a id="api-endpoints"></a>
-## 14. 🌐 API Endpoints
+## 11. 🌐 API Endpoints
 
 ### Ask a Question
 
@@ -627,7 +621,7 @@ GET /api-docs             # OpenAPI JSON specification
 ---
 
 <a id="knowledge-base-on-disk"></a>
-## 15. 🔹 Knowledge Base on Disk
+## 12. 🔹 Knowledge Base on Disk
 
 All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/projects/okf/wiki`):
 
@@ -662,7 +656,7 @@ Key points about how files are stored:
 ---
 
 <a id="implementation-notes"></a>
-## 16. 🔹 Implementation Notes
+## 13. 🔹 Implementation Notes
 
 ### Frontmatter Parsing
 
@@ -683,7 +677,7 @@ The sync loop now increments `skipped` **inline** when a file is unchanged (matc
 ---
 
 <a id="references"></a>
-## 17. 📚 References
+## 14. 📚 References
 
 <ul>
 
