@@ -97,10 +97,10 @@ A bundle MAY be distributed as:
 The following filenames have defined meaning at any level of the
 hierarchy and MUST NOT be used for concept documents:
 
-| Filename     | Purpose                                                |
-|--------------|--------------------------------------------------------|
-| `index.md`   | Directory listing. See §6.                             |
-| `log.md`     | Update history. See §7.                                |
+| Filename   | Purpose                    |
+|------------|----------------------------|
+| `index.md` | Directory listing. See §6. |
+| `log.md`   | Update history. See §7.    |
 
 All other `.md` files are concept documents.
 
@@ -170,11 +170,11 @@ prose, since structure aids both human reading and agent retrieval.
 There are no required body sections. The following section headings have
 **conventional** meaning and SHOULD be used when applicable:
 
-| Heading        | Purpose                                                |
-|----------------|--------------------------------------------------------|
-| `# Schema`     | Structured description of an asset's columns/fields.   |
-| `# Examples`   | Concrete usage examples, often as fenced code blocks.  |
-| `# Citations`  | External sources backing claims in the body. See §8.   |
+| Heading       | Purpose                                               |
+|---------------|-------------------------------------------------------|
+| `# Schema`    | Structured description of an asset's columns/fields.  |
+| `# Examples`  | Concrete usage examples, often as fenced code blocks. |
+| `# Citations` | External sources backing claims in the body. See §8.  |
 
 ### 4.3 Example: a concept bound to a resource
 

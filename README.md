@@ -89,15 +89,15 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 
 The trade-off is that OKF relies on the LLM's ability to reason over the index and select relevant files — it works best when files have clear, descriptive `description` frontmatter and when the repository contains conceptual knowledge (not millions of tiny files).
 
-| Aspect         | RAG                              | OKF                                 |
-|----------------|----------------------------------|-------------------------------------|
-| Storage        | Vector DB                        | Plain markdown files on disk        |
-| Retrieval      | Cosine similarity search         | LLM reads index, selects files      |
-| Chunking       | Yes — 500-token chunks           | No — whole files loaded             |
-| Infrastructure | Embedding model + vector DB      | Just filesystem + Ollama            |
-| Source updates | Re-embed on change               | Auto-sync from GitHub hourly        |
-| Readable       | No — vectors are opaque          | Yes — markdown files                |
-| Best for       | Large corpora, semantic search   | Structured repos, curated knowledge |
+| Aspect         | RAG                            | OKF                                 |
+|----------------|--------------------------------|-------------------------------------|
+| Storage        | Vector DB                      | Plain markdown files on disk        |
+| Retrieval      | Cosine similarity search       | LLM reads index, selects files      |
+| Chunking       | Yes — 500-token chunks         | No — whole files loaded             |
+| Infrastructure | Embedding model + vector DB    | Just filesystem + Ollama            |
+| Source updates | Re-embed on change             | Auto-sync from GitHub hourly        |
+| Readable       | No — vectors are opaque        | Yes — markdown files                |
+| Best for       | Large corpora, semantic search | Structured repos, curated knowledge |
 
 ---
 
@@ -453,12 +453,12 @@ All settings have sensible defaults. The only required variable is `GITHUB_REPO_
 
 The application uses **three separate LLM clients**, each tuned for its task:
 
-| Role       | Bean                   | Model env var          | Temperature  | Purpose                                                             |
-|------------|------------------------|------------------------|--------------|---------------------------------------------------------------------|
-| Chat       | `chatClient` (primary) | `OLLAMA_MODEL`         | 0.3          | Answers user questions with full file context + model-catalog tools |
-| Navigation | `navigationChatClient` | `OKF_NAV_MODEL`        | 0.0          | Selects relevant files from index — deterministic                   |
-| Extraction | `extractionChatClient` | `OKF_EXTRACTION_MODEL` | 0.2          | Converts source files into OKF knowledge docs at sync time          |
-| Enrichment | `enrichmentChatClient` | `OKF_MCP_ENRICH_MODEL` | 0.3          | Writes 1-2 page model profiles from Hugging Face cards              |
+| Role       | Bean                   | Model env var          | Temperature | Purpose                                                             |
+|------------|------------------------|------------------------|-------------|---------------------------------------------------------------------|
+| Chat       | `chatClient` (primary) | `OLLAMA_MODEL`         | 0.3         | Answers user questions with full file context + model-catalog tools |
+| Navigation | `navigationChatClient` | `OKF_NAV_MODEL`        | 0.0         | Selects relevant files from index — deterministic                   |
+| Extraction | `extractionChatClient` | `OKF_EXTRACTION_MODEL` | 0.2         | Converts source files into OKF knowledge docs at sync time          |
+| Enrichment | `enrichmentChatClient` | `OKF_MCP_ENRICH_MODEL` | 0.3         | Writes 1-2 page model profiles from Hugging Face cards              |
 
 Using separate models lets you balance speed and quality: navigation runs on a fast small model (low latency per query), extraction runs on a quality model (runs once per file at sync time, quality matters more than speed).
 
