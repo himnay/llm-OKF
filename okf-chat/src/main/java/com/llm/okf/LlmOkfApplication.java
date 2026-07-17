@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @SpringBootApplication
-public class LlmOkfApplication {
+class LlmOkfApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(LlmOkfApplication.class, args);
