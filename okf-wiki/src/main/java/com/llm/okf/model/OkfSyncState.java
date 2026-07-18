@@ -11,9 +11,9 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 
-@Table("okf_sync_state")
 @Data
 @NoArgsConstructor
+@Table("okf_sync_state")
 public class OkfSyncState {
 
     @Id

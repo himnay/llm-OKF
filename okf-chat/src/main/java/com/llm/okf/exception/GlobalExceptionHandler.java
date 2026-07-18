@@ -63,8 +63,8 @@ public class GlobalExceptionHandler {
     }
 
     /** Catches all unhandled exceptions and returns a 500 with the exception message. Logs at ERROR level. */
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleGeneral(Exception ex) {
         log.error("Unhandled exception", ex);
         return ApiError.of(500, "Internal Server Error", ex.getMessage());
