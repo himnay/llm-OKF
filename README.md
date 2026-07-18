@@ -23,6 +23,21 @@ A **Spring Boot + Spring AI** application that turns any GitHub repository into 
 
 Knowledge is synced from GitHub, converted to structured markdown files using a local Ollama LLM, and stored on disk. When you ask a question, an LLM agent reads a lightweight index to find the right files, then loads those full files and answers from their complete content.
 
+```mermaid
+flowchart LR
+    subgraph ingest["Sync — write path"]
+        gh[GitHub repo] --> sync[Sync service]
+        sync -->|"convert via Ollama"| okf["OKF markdown files<br/>+ YAML frontmatter"]
+        okf --> disk[("knowledge base<br/>on disk + index")]
+    end
+    subgraph query["Query — read path"]
+        q[Question] --> agent[LLM agent]
+        agent -->|"1: read index"| disk
+        agent -->|"2: load full files"| disk
+        agent -->|"3: answer from content"| ans[Answer]
+    end
+```
+
 ---
 
 <a id="what-is-okf"></a>
