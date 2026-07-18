@@ -64,6 +64,7 @@ public class OkfNavigator {
         return index;
     }
 
+    /** Handles index synced. */
     @EventListener
     public void onIndexSynced(IndexSyncedEvent event) {
         redis.delete(INDEX_CACHE_KEY);

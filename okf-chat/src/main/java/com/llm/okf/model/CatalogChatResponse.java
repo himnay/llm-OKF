@@ -10,6 +10,7 @@ public record CatalogChatResponse(
         String answer,
         List<CatalogModel> models) {
 
+    /** Counts. */
     public int count() {
         return models == null ? 0 : models.size();
     }
