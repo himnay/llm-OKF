@@ -4,12 +4,15 @@ spring:
       base-url: http://localhost:11434
       chat:
         model: llama4:scout
+  # datasource/mongodb connection details below are overridden at test-runtime by the
+  # Testcontainers @ServiceConnection fields in LlmOkfApplicationTests — kept here only
+  # as fallback values for any test that doesn't bring up the containers.
   datasource:
     url: jdbc:postgresql://localhost:5432/okf
     username: okf
     password: okf
   flyway:
-    enabled: false
+    enabled: true
   mongodb:
     uri: mongodb://localhost:27017/okf-test
 
