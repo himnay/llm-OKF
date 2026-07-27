@@ -78,8 +78,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-micrometer-tracing</artifactId>
         </dependency>
-        <!-- Boot 4: OTel SDK + the micrometer→OTel tracing bridge live in their own modules —
-             without them no Tracer bean exists and no spans are ever exported -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-opentelemetry</artifactId>
@@ -94,7 +92,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
