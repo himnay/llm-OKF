@@ -1,4 +1,4 @@
-# <span style="color:hsl(63,68%,32%)">Open Knowledge Format (OKF)</span>
+# <span style="color:hsl(63,80%,50%)">Open Knowledge Format (OKF)</span>
 
 **Version 0.1 — Draft**
 
@@ -14,7 +14,7 @@ can `git clone` a repo, you can ship it.
 
 ---
 
-## <span style="color:hsl(78,68%,32%)">1. Motivation</span>
+## <span style="color:hsl(201,80%,58%)">1. Motivation</span>
 
 The space of knowledge representation for AI agents is evolving quickly,
 and many incompatible conventions are emerging. OKF takes the position
@@ -30,7 +30,7 @@ The format is minimally opinionated. It standardizes only the small set
 of structural conventions needed to make a knowledge corpus
 *self-describing* — anything beyond that is left to the producer.
 
-### <span style="color:hsl(93,68%,32%)">Goals</span>
+### <span style="color:hsl(338,80%,58%)">Goals</span>
 
 1. Define a universal format that **enrichment agents** can write into.
 2. Inform how **consumption agents** should read and traverse it.
@@ -38,7 +38,7 @@ of structural conventions needed to make a knowledge corpus
 4. Standardize the small number of **required** fields that must be
    present for content to be meaningfully consumed.
 
-### <span style="color:hsl(108,68%,32%)">Non-goals</span>
+### <span style="color:hsl(116,80%,58%)">Non-goals</span>
 
 - Defining a fixed taxonomy of concept types.
 - Prescribing storage, serving, or query infrastructure.
@@ -47,7 +47,7 @@ of structural conventions needed to make a knowledge corpus
 
 ---
 
-## <span style="color:hsl(123,68%,32%)">2. Terminology</span>
+## <span style="color:hsl(253,80%,58%)">2. Terminology</span>
 
 - **Knowledge Bundle** — A self-contained, hierarchical collection of
   knowledge documents. The unit of distribution.
@@ -68,7 +68,7 @@ of structural conventions needed to make a knowledge corpus
 
 ---
 
-## <span style="color:hsl(138,68%,32%)">3. Bundle Structure</span>
+## <span style="color:hsl(31,80%,58%)">3. Bundle Structure</span>
 
 A bundle is a directory tree of markdown files. The directory structure
 is independent of the domain — producers organize concepts however makes
@@ -92,7 +92,7 @@ A bundle MAY be distributed as:
 - A tarball or zip archive of the directory.
 - A subdirectory within a larger repository.
 
-### <span style="color:hsl(153,68%,36%)">3.1 Reserved filenames</span>
+### <span style="color:hsl(168,80%,58%)">3.1 Reserved filenames</span>
 
 The following filenames have defined meaning at any level of the
 hierarchy and MUST NOT be used for concept documents:
@@ -111,7 +111,7 @@ view can synthesize one at consumption time by scanning frontmatter.
 
 ---
 
-## <span style="color:hsl(168,68%,36%)">4. Concept Documents</span>
+## <span style="color:hsl(306,80%,58%)">4. Concept Documents</span>
 
 Every concept is a UTF-8 markdown file. It has two parts:
 
@@ -119,7 +119,7 @@ Every concept is a UTF-8 markdown file. It has two parts:
    the start of the file and a closing `---` on its own line.
 2. A **markdown body**, containing free-form content.
 
-### <span style="color:hsl(183,68%,36%)">4.1 Frontmatter</span>
+### <span style="color:hsl(83,80%,58%)">4.1 Frontmatter</span>
 
 ```yaml
 ---
@@ -161,7 +161,7 @@ timestamp: <ISO 8601 datetime>     # Optional last-modified time
 SHOULD preserve unknown keys when round-tripping and SHOULD NOT reject
 documents with unrecognized fields.
 
-### <span style="color:hsl(198,68%,36%)">4.2 Body</span>
+### <span style="color:hsl(221,80%,58%)">4.2 Body</span>
 
 The body is standard markdown. Producers SHOULD favor structural
 markdown — headings, lists, tables, fenced code blocks — over freeform
@@ -176,7 +176,7 @@ There are no required body sections. The following section headings have
 | `# Examples`  | Concrete usage examples, often as fenced code blocks. |
 | `# Citations` | External sources backing claims in the body. See §8.  |
 
-### <span style="color:hsl(213,68%,44%)">4.3 Example: a concept bound to a resource</span>
+### <span style="color:hsl(358,80%,58%)">4.3 Example: a concept bound to a resource</span>
 
 ```markdown
 ---
@@ -206,7 +206,7 @@ Joined with [customers](/tables/customers.md) on `customer_id`.
 [1] [BigQuery table schema](https://console.cloud.google.com/bigquery?p=acme&d=sales&t=orders)
 ```
 
-### <span style="color:hsl(228,68%,44%)">4.4 Example: a concept not bound to a resource</span>
+### <span style="color:hsl(136,80%,58%)">4.4 Example: a concept not bound to a resource</span>
 
 ```markdown
 ---
@@ -228,7 +228,7 @@ its expected SLA. See the [orders table](/tables/orders.md).
 2. …
 ```
 
-### <span style="color:hsl(243,68%,44%)">4.5 Query-backed concepts (live views)</span>
+### <span style="color:hsl(273,80%,58%)">4.5 Query-backed concepts (live views)</span>
 
 A concept MAY carry its content as a *query definition* instead of
 embedded data. Such concepts use `type: query` and add a `query`
@@ -271,12 +271,12 @@ gracefully by presenting the definition itself.
 
 ---
 
-## <span style="color:hsl(258,68%,44%)">5. Cross-linking</span>
+## <span style="color:hsl(51,80%,50%)">5. Cross-linking</span>
 
 Concepts MAY link to other concepts using standard markdown links. Two
 forms are supported:
 
-### <span style="color:hsl(273,68%,44%)">5.1 Absolute (bundle-relative) links</span>
+### <span style="color:hsl(188,80%,58%)">5.1 Absolute (bundle-relative) links</span>
 
 Begin with `/`, interpreted relative to the bundle root.
 
@@ -287,7 +287,7 @@ See the [customers table](/tables/customers.md) for the join key.
 This is the **recommended** form because it is stable when documents are
 moved within their subdirectory.
 
-### <span style="color:hsl(288,68%,44%)">5.2 Relative links</span>
+### <span style="color:hsl(326,80%,58%)">5.2 Relative links</span>
 
 Standard markdown relative paths.
 
@@ -295,7 +295,7 @@ Standard markdown relative paths.
 See the [neighboring concept](./other.md).
 ```
 
-### <span style="color:hsl(303,68%,44%)">5.3 Link semantics</span>
+### <span style="color:hsl(103,80%,58%)">5.3 Link semantics</span>
 
 A link from concept A to concept B asserts a *relationship*. The
 specific kind of relationship (parent/child, references, joins-with,
@@ -309,7 +309,7 @@ not-yet-written knowledge.
 
 ---
 
-## <span style="color:hsl(318,68%,44%)">6. Index Files</span>
+## <span style="color:hsl(241,80%,58%)">6. Index Files</span>
 
 An `index.md` file MAY appear in any directory, including the bundle
 root. It enumerates the directory's contents to support **progressive
@@ -336,7 +336,7 @@ MAY synthesize one on the fly when none is present.
 
 ---
 
-## <span style="color:hsl(333,68%,44%)">7. Log Files (optional)</span>
+## <span style="color:hsl(18,80%,58%)">7. Log Files (optional)</span>
 
 A `log.md` file MAY appear at any level of the hierarchy to record the
 history of changes to that scope. The format is a flat list of
@@ -360,7 +360,7 @@ prose; the leading bold word (`**Update**`, `**Creation**`,
 
 ---
 
-## <span style="color:hsl(348,68%,44%)">8. Citations</span>
+## <span style="color:hsl(156,80%,58%)">8. Citations</span>
 
 When a concept's body makes claims sourced from external material,
 those sources SHOULD be listed under a `# Citations` heading at the
@@ -379,7 +379,7 @@ first-class OKF concepts.
 
 ---
 
-## <span style="color:hsl(3,68%,44%)">9. Conformance</span>
+## <span style="color:hsl(293,80%,58%)">9. Conformance</span>
 
 A bundle is **conformant** with OKF v0.1 if:
 
@@ -404,7 +404,7 @@ generated by agents.
 
 ---
 
-## <span style="color:hsl(18,68%,44%)">10. Relationship to other formats</span>
+## <span style="color:hsl(71,80%,58%)">10. Relationship to other formats</span>
 
 OKF is intentionally close to several established patterns:
 
@@ -420,7 +420,7 @@ set of rules needed for interoperability without dictating tooling.
 
 ---
 
-## <span style="color:hsl(33,68%,44%)">11. Versioning</span>
+## <span style="color:hsl(208,80%,58%)">11. Versioning</span>
 
 This document specifies OKF version **0.1**. Future revisions will be
 versioned in the form `<major>.<minor>`:
@@ -438,7 +438,7 @@ consumption rather than refusing the bundle.
 
 ---
 
-## <span style="color:hsl(48,68%,32%)">Appendix A — Minimal example bundle</span>
+## <span style="color:hsl(346,80%,58%)">Appendix A — Minimal example bundle</span>
 
 ```
 my_bundle/

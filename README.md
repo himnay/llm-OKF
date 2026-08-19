@@ -1,8 +1,8 @@
-# <span style="color:hsl(177,68%,36%)">llm-OKF — Open Knowledge Format</span>
+# <span style="color:hsl(177,80%,58%)">llm-OKF — Open Knowledge Format</span>
 
 <img src="image/spring-logo.png" alt="logo" width="80"/>
 
-## <span style="color:hsl(187,68%,36%)">Table of contents</span>
+## <span style="color:hsl(315,80%,58%)">Table of contents</span>
 
 1. 💡 [What is OKF?](#what-is-okf)
 2. 🤖 [Why OKF Instead of RAG?](#why-okf-instead-of-rag)
@@ -41,7 +41,7 @@ flowchart LR
 ---
 
 <a id="what-is-okf"></a>
-## <span style="color:hsl(198,68%,36%)">1. 💡 What is OKF?</span>
+## <span style="color:hsl(92,80%,58%)">1. 💡 What is OKF?</span>
 
 **OKF (Open Knowledge Format)** is a structured way to store knowledge as plain markdown files with YAML frontmatter. Each file is a self-contained knowledge document that describes one concept, pattern, or topic. The files are stored on disk — no database, no embeddings.
 
@@ -76,7 +76,7 @@ A special `index.md` file is automatically generated, listing every knowledge fi
 ---
 
 <a id="why-okf-instead-of-rag"></a>
-## <span style="color:hsl(208,68%,44%)">2. 🤖 Why OKF Instead of RAG?</span>
+## <span style="color:hsl(230,80%,58%)">2. 🤖 Why OKF Instead of RAG?</span>
 
 **RAG (Retrieval-Augmented Generation)** is the common approach: embed documents as vectors, store them in a vector database, and retrieve the nearest chunks when a query comes in. RAG has significant downsides:
 
@@ -117,9 +117,9 @@ The trade-off is that OKF relies on the LLM's ability to reason over the index a
 ---
 
 <a id="how-it-works--step-by-step"></a>
-## <span style="color:hsl(218,68%,44%)">3. 🔹 How It Works — Step by Step</span>
+## <span style="color:hsl(7,80%,58%)">3. 🔹 How It Works — Step by Step</span>
 
-### <span style="color:hsl(228,68%,44%)">Phase 1: GitHub Sync</span>
+### <span style="color:hsl(145,80%,58%)">Phase 1: GitHub Sync</span>
 
 The app connects to a GitHub repository using the GitHub REST API and builds a knowledge base on disk. This happens once on startup and then every hour (configurable).
 
@@ -181,7 +181,7 @@ The index is intentionally small — it contains only paths and one-line descrip
 
 ---
 
-### <span style="color:hsl(239,68%,44%)">Phase 2: Answering a Question</span>
+### <span style="color:hsl(282,80%,58%)">Phase 2: Answering a Question</span>
 
 When you send a question to `POST /api/v1/okf/chat`, the following four steps happen:
 
@@ -210,7 +210,7 @@ The navigation prompt limits the response to at most `maxFilesPerQuery` files (d
 ---
 
 <a id="multi-module-architecture"></a>
-## <span style="color:hsl(249,68%,44%)">4. 🏗️ Multi-Module Architecture</span>
+## <span style="color:hsl(60,80%,50%)">4. 🏗️ Multi-Module Architecture</span>
 
 The project is structured as a **multi-module Maven project**. Each data source has its own module, making it easy to add new knowledge sources (Confluence, Notion, JIRA, local files, S3) without modifying existing code.
 
@@ -271,7 +271,7 @@ llm-OKF/                    ← Parent aggregator (packaging=pom)
 
 **`okf-chat`** is the runnable Spring Boot application. It depends on `okf-wiki`, `okf-llm-models`, and `okf-mcp` and adds the HTTP layer. The data-source modules are just Maven dependencies from `okf-chat`'s perspective.
 
-### <span style="color:hsl(259,68%,44%)">How to Add a New Data Source Module</span>
+### <span style="color:hsl(197,80%,58%)">How to Add a New Data Source Module</span>
 
 If you want to sync knowledge from Confluence, for example:
 
@@ -286,7 +286,7 @@ The navigator and chat service do not need to change at all — they read from `
 ---
 
 <a id="prompt-templates"></a>
-## <span style="color:hsl(270,68%,44%)">5. 🤖 Prompt Templates</span>
+## <span style="color:hsl(335,80%,58%)">5. 🤖 Prompt Templates</span>
 
 All LLM prompts are stored as **Spring AI StringTemplate (`.st`) files** under `okf-chat/src/main/resources/prompts/`. Variables use `{variableName}` syntax and are injected at runtime via `PromptTemplate.render(Map.of(...))`. `PromptTemplate` instances are constructed once at startup and reused across requests.
 
@@ -302,7 +302,7 @@ To change how the LLM selects files, how it answers questions, or how it generat
 ---
 
 <a id="database-schema"></a>
-## <span style="color:hsl(280,68%,44%)">6. 🗄️ Database Schema</span>
+## <span style="color:hsl(112,80%,58%)">6. 🗄️ Database Schema</span>
 
 Two tables are created automatically by **Flyway** on startup. You do not need to create them manually.
 
@@ -337,7 +337,7 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 ---
 
 <a id="prerequisites"></a>
-## <span style="color:hsl(290,68%,44%)">7. 🔹 Prerequisites</span>
+## <span style="color:hsl(250,80%,58%)">7. 🔹 Prerequisites</span>
 
 <ul>
 
@@ -367,7 +367,7 @@ docker run -d --name okf-postgres \
 ---
 
 <a id="running-the-application"></a>
-## <span style="color:hsl(300,68%,44%)">8. 🚀 Running the Application</span>
+## <span style="color:hsl(27,80%,58%)">8. 🚀 Running the Application</span>
 
 Build and run the `okf-chat` module from the project root:
 
@@ -400,15 +400,15 @@ Subsequent syncs run automatically every hour.
 ---
 
 <a id="development"></a>
-## <span style="color:hsl(311,68%,44%)">9. 🔹 Development</span>
+## <span style="color:hsl(165,80%,58%)">9. 🔹 Development</span>
 
-### <span style="color:hsl(321,68%,44%)">Hot Reload with Spring DevTools</span>
+### <span style="color:hsl(302,80%,58%)">Hot Reload with Spring DevTools</span>
 
 `spring-boot-devtools` is included in `okf-chat` (optional scope — not packaged in the fat jar). While running via `mvn spring-boot:run`, any class or resource change triggers an automatic restart. In IntelliJ, enable **Build project automatically** (`Settings → Build, Execution, Deployment → Compiler`) and optionally enable registry key `compiler.automake.allow.when.app.running`.
 
 Prompt templates (`.st` files) under `src/main/resources/prompts/` are classpath resources — DevTools detects changes to them and restarts the context. This means you can tune prompts and see results without a manual restart.
 
-### <span style="color:hsl(331,68%,44%)">Running Tests</span>
+### <span style="color:hsl(80,80%,58%)">Running Tests</span>
 
 ```bash
 # Full test suite
@@ -423,7 +423,7 @@ The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the 
 ---
 
 <a id="configuration-reference"></a>
-## <span style="color:hsl(342,68%,44%)">10. 📚 Configuration Reference</span>
+## <span style="color:hsl(217,80%,58%)">10. 📚 Configuration Reference</span>
 
 All settings have sensible defaults. The only required variable is `GITHUB_REPO_URL`.
 
@@ -464,7 +464,7 @@ All settings have sensible defaults. The only required variable is `GITHUB_REPO_
 | `OKF_MCP_CARD_MAX_CHARS`   | `12000`                                                  | Max model-card characters fed to the enrichment LLM               |
 | `OKF_MCP_CACHE_TTL_HOURS`  | `168`                                                    | Enriched profile cache TTL (default 7 days)                       |
 
-### <span style="color:hsl(352,68%,44%)">Three LLM Roles</span>
+### <span style="color:hsl(355,80%,58%)">Three LLM Roles</span>
 
 The application uses **three separate LLM clients**, each tuned for its task:
 
@@ -480,9 +480,9 @@ Using separate models lets you balance speed and quality: navigation runs on a f
 ---
 
 <a id="api-endpoints"></a>
-## <span style="color:hsl(2,68%,44%)">11. 🌐 API Endpoints</span>
+## <span style="color:hsl(132,80%,58%)">11. 🌐 API Endpoints</span>
 
-### <span style="color:hsl(12,68%,44%)">Ask a Question</span>
+### <span style="color:hsl(270,80%,58%)">Ask a Question</span>
 
 Sends a natural language question to the OKF agent. The agent navigates the index, loads the relevant files, and returns a grounded answer.
 
@@ -508,7 +508,7 @@ Response:
 }
 ```
 
-### <span style="color:hsl(23,68%,44%)">Ask a Question — Streaming</span>
+### <span style="color:hsl(47,80%,50%)">Ask a Question — Streaming</span>
 
 Same as above but streams the answer as Server-Sent Events, token by token. Use this for a chat-style UI where you want to display the answer as it is being generated.
 
@@ -522,7 +522,7 @@ Accept: text/event-stream
 }
 ```
 
-### <span style="color:hsl(33,68%,44%)">View the Knowledge Base Index</span>
+### <span style="color:hsl(185,80%,58%)">View the Knowledge Base Index</span>
 
 Returns the full content of `index.md` — the auto-generated map of all knowledge files with their descriptions.
 
@@ -530,7 +530,7 @@ Returns the full content of `index.md` — the auto-generated map of all knowled
 GET /api/v1/okf/index
 ```
 
-### <span style="color:hsl(43,68%,32%)">List All Knowledge Files</span>
+### <span style="color:hsl(322,80%,58%)">List All Knowledge Files</span>
 
 Returns a JSON array of all OKF files with their frontmatter metadata (title, type, tags, related). Useful for inspecting what the knowledge base contains without reading individual files.
 
@@ -538,7 +538,7 @@ Returns a JSON array of all OKF files with their frontmatter metadata (title, ty
 GET /api/v1/okf/files
 ```
 
-### <span style="color:hsl(54,68%,32%)">Trigger a Manual Sync</span>
+### <span style="color:hsl(100,80%,58%)">Trigger a Manual Sync</span>
 
 Runs a full GitHub sync immediately, outside the normal schedule. Useful when you want to pull in recent changes right away.
 
@@ -570,7 +570,7 @@ Possible status values:
 
 </ul>
 
-### <span style="color:hsl(64,68%,32%)">Get Last Sync Status</span>
+### <span style="color:hsl(237,80%,58%)">Get Last Sync Status</span>
 
 Returns the result of the most recent sync without triggering a new one.
 
@@ -580,7 +580,7 @@ GET /api/v1/okf/sync/status
 
 Returns `204 No Content` if no sync has run since startup.
 
-### <span style="color:hsl(74,68%,32%)">LLM Model Catalog Endpoints</span>
+### <span style="color:hsl(15,80%,58%)">LLM Model Catalog Endpoints</span>
 
 The Hugging Face model catalog (module `okf-llm-models` + `okf-mcp`) adds its own endpoint group:
 
@@ -607,7 +607,7 @@ Content-Type: application/json
 For plain model listings prefer the `resolve` endpoint — it executes the MongoDB query directly
 and returns instantly with no LLM call.
 
-### <span style="color:hsl(84,68%,32%)">MCP Server</span>
+### <span style="color:hsl(152,80%,58%)">MCP Server</span>
 
 The same model-catalog tools are exposed over the Model Context Protocol so external agents
 (Claude Code, IDEs, other apps) can use the knowledge base directly:
@@ -623,7 +623,7 @@ Tools: `searchModels`, `getModelKnowledge`, `enrichModelDetails`. Example Claude
 claude mcp add okf --transport sse http://localhost:8090/sse
 ```
 
-### <span style="color:hsl(95,68%,32%)">Infrastructure Endpoints</span>
+### <span style="color:hsl(290,80%,58%)">Infrastructure Endpoints</span>
 
 ```http
 GET /actuator/health      # Health and readiness check
@@ -636,7 +636,7 @@ GET /api-docs             # OpenAPI JSON specification
 ---
 
 <a id="knowledge-base-on-disk"></a>
-## <span style="color:hsl(105,68%,32%)">12. 🔹 Knowledge Base on Disk</span>
+## <span style="color:hsl(67,80%,50%)">12. 🔹 Knowledge Base on Disk</span>
 
 All knowledge files are stored under `OKF_KB_PATH` (default: `/home/himansu/projects/okf/wiki`):
 
@@ -671,28 +671,28 @@ Key points about how files are stored:
 ---
 
 <a id="implementation-notes"></a>
-## <span style="color:hsl(115,68%,32%)">13. 🔹 Implementation Notes</span>
+## <span style="color:hsl(205,80%,58%)">13. 🔹 Implementation Notes</span>
 
-### <span style="color:hsl(126,68%,32%)">Frontmatter Parsing</span>
+### <span style="color:hsl(342,80%,58%)">Frontmatter Parsing</span>
 
 YAML frontmatter is parsed using **SnakeYAML** (`org.yaml.snakeyaml.Yaml`), which is already on the classpath via Spring Boot. This handles all standard YAML types — strings, lists, nested maps — correctly. The previous hand-rolled parser that split on `:` and `[` has been replaced.
 
-### <span style="color:hsl(136,68%,32%)">Index Caching</span>
+### <span style="color:hsl(120,80%,58%)">Index Caching</span>
 
 `OkfNavigator.loadIndex()` caches the content of `index.md` in memory for **60 seconds**. Every query previously read the file from disk on every request. The cache uses a `volatile` field + expiry timestamp — no external cache library required.
 
-### <span style="color:hsl(146,68%,32%)">JSON Path Parsing</span>
+### <span style="color:hsl(257,80%,58%)">JSON Path Parsing</span>
 
 Navigation LLM responses (a JSON array of file paths) are parsed with **Jackson `ObjectMapper`**. The parser extracts the `[...]` array substring first, tolerating any surrounding explanation text the model may emit. This replaces the previous regex which silently returned empty on malformed responses.
 
-### <span style="color:hsl(156,68%,36%)">Skipped File Counter</span>
+### <span style="color:hsl(35,80%,58%)">Skipped File Counter</span>
 
 The sync loop now increments `skipped` **inline** when a file is unchanged (matching SHA + model). The previous implementation had a redundant post-loop stream pass that re-counted unchanged files separately, which made the counter logic split across two places and harder to follow.
 
 ---
 
 <a id="references"></a>
-## <span style="color:hsl(167,68%,36%)">14. 📚 References</span>
+## <span style="color:hsl(172,80%,58%)">14. 📚 References</span>
 
 <ul>
 
