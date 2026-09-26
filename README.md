@@ -203,6 +203,8 @@ The navigation prompt limits the response to at most `maxFilesPerQuery` files (d
 
 `OkfNavigator.loadFiles()` reads the complete content of each selected file from disk. There is no chunking and no truncation — the entire OKF document is loaded into memory. This is the fundamental principle of OKF: the LLM gets the complete context, not fragments.
 
+The file list comes from the navigation LLM, and its prompt contains the user's question, so `loadFiles()` treats the paths as untrusted: it reads only `.md` files that resolve inside `knowledgeBasePath`. A `../` escape or an absolute path such as `/etc/passwd` is logged and skipped, so a prompt-injected question can't pull other files from the machine into the answer.
+
 **Step 4 — LLM answers using full file content**
 
 `OkfChatService` builds a final prompt that includes all the loaded file content (with title and tags from frontmatter) and your original question. The LLM produces an answer grounded in the exact knowledge from those files. The HTTP response includes the answer text plus the list of source files that were used.
@@ -341,9 +343,10 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 
 <ul>
 
-- Java 21 or higher
+- Java 25 (the parent POM compiles for release 25)
 - Maven 3.9 or higher
-- PostgreSQL database (local or Docker)
+- The parent POM chain installed locally, because `com.org.llm:super-pom` and `learning-bom` are not on Maven Central: `(cd ~/projects/learning-bom && mvn -N install)`, then `(cd ~/projects/super-pom && mvn -N install)`
+- PostgreSQL, MongoDB and Redis (`docker compose up -d` starts all three, plus the observability stack)
 - Ollama running locally with at least one model pulled
 
 </ul>
@@ -418,7 +421,7 @@ mvn test
 mvn -pl okf-chat test
 ```
 
-The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the full Spring context assembles correctly, including all `ChatClient` beans, prompt template loading, and `ObjectMapper` wiring.
+The `LlmOkfApplicationTests` context load test (`@SpringBootTest`) verifies the full Spring context assembles correctly, including all `ChatClient` beans, prompt template loading, and `ObjectMapper` wiring. The databases come from Testcontainers, so only Docker is needed; CI (`.github/workflows/ci.yml`) runs `mvn -B clean verify` on every push.
 
 ---
 
