@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -106,13 +107,25 @@ public class OkfNavigator {
      * @return parsed OKF files including frontmatter metadata and body
      */
     public List<OkfFile> loadFiles(List<String> relativePaths) {
-        Path base = Path.of(properties.knowledgeBasePath());
+        Path base = Path.of(properties.knowledgeBasePath()).toAbsolutePath().normalize();
         return relativePaths.stream()
-                .map(rel -> {
-                    String content = readFile(base.resolve(rel));
-                    return parseOkfFile(rel, content);
-                })
+                .flatMap(rel -> resolveInsideKnowledgeBase(base, rel).stream()
+                        .map(path -> parseOkfFile(rel, readFile(path))))
                 .toList();
+    }
+
+    /**
+     * The paths come from the navigation LLM, whose prompt contains the user's question, so they are
+     * untrusted: only {@code .md} files inside the knowledge base are read. {@code ../} escapes and
+     * absolute paths are dropped, so a prompt-injected question can't pull other files into the answer.
+     */
+    private Optional<Path> resolveInsideKnowledgeBase(Path base, String relativePath) {
+        Path file = base.resolve(relativePath).normalize();
+        if (!file.startsWith(base) || !file.getFileName().toString().endsWith(".md")) {
+            log.warn("Ignoring navigator path outside the knowledge base: {}", relativePath);
+            return Optional.empty();
+        }
+        return Optional.of(file);
     }
 
     /** Lists every OKF knowledge file under {@code knowledgeBasePath}, excluding the index and dotfiles. */

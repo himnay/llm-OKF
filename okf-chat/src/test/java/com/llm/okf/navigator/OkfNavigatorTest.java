@@ -197,4 +197,17 @@ class OkfNavigatorTest {
 
         assertThat(freshNavigator.listAllFiles()).isEmpty();
     }
+
+    @Test
+    @DisplayName("loadFiles only reads .md files inside the knowledge base, whatever paths the LLM returns")
+    void loadFilesIgnoresPathsOutsideTheKnowledgeBase() throws Exception {
+        Files.createDirectories(knowledgeBase.resolve("wiki"));
+        writeFile("wiki/ok.md", "---\ntitle: ok\n---\nbody");
+        Path outside = Files.writeString(knowledgeBase.getParent().resolve("outside-" + knowledgeBase.getFileName() + ".md"), "secret");
+
+        List<OkfFile> files = navigator.loadFiles(List.of(
+                "wiki/ok.md", "../" + outside.getFileName(), outside.toString(), "/etc/passwd", "wiki/../wiki/ok.md"));
+
+        assertThat(files).extracting(OkfFile::path).containsExactly("wiki/ok.md", "wiki/../wiki/ok.md");
+    }
 }
