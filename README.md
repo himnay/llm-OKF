@@ -343,7 +343,7 @@ ShedLock acquires a named lock before each scheduled sync and releases it when d
 
 <ul>
 
-- Java 25 (the parent POM compiles for release 25)
+- Java 27 (the parent POM compiles for release 27)
 - Maven 3.9 or higher
 - The parent POM chain installed locally, because `com.org.llm:super-pom` and `learning-bom` are not on Maven Central: `(cd ~/projects/learning-bom && mvn -N install)`, then `(cd ~/projects/super-pom && mvn -N install)`
 - PostgreSQL, MongoDB and Redis (`docker compose up -d` starts all three, plus the observability stack)
